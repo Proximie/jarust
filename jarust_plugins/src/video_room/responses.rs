@@ -60,7 +60,7 @@ pub struct Room {
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
-pub struct Participant {
+pub struct VideoRoomParticipant {
     /// unique numeric ID of the participant
     pub id: JanusId,
     /// display name of the participant, if any
@@ -270,7 +270,7 @@ pub struct VideoRoomListRoomsRsp {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
 pub struct ListParticipantsRsp {
     pub room: JanusId,
-    pub participants: Vec<Participant>,
+    pub participants: Vec<VideoRoomParticipant>,
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]

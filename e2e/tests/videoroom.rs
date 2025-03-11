@@ -1,12 +1,17 @@
-use jarust::core::jaconfig::{JaConfig, JanusAPI};
+use jarust::core::jaconfig::JaConfig;
+use jarust::core::jaconfig::JanusAPI;
 use jarust::interface::tgenerator::RandomTransactionGenerator;
 use jarust::plugins::video_room::events::PluginEvent;
+use jarust::plugins::video_room::events::VideoRoomEvent;
 use jarust::plugins::video_room::handle::VideoRoomHandle;
 use jarust::plugins::video_room::jahandle_ext::VideoRoom;
 use jarust::plugins::video_room::params::VideoRoomDestroyParams;
 use jarust::plugins::video_room::params::VideoRoomEditParams;
 use jarust::plugins::video_room::params::VideoRoomEditParamsOptional;
 use jarust::plugins::video_room::params::VideoRoomExistsParams;
+use jarust::plugins::video_room::params::VideoRoomPublisherJoinParams;
+use jarust::plugins::video_room::params::VideoRoomPublisherJoinParamsOptional;
+use jarust::plugins::video_room::responses::VideoRoomParticipant;
 use jarust::plugins::JanusId;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -144,6 +149,64 @@ async fn room_crud_e2e() {
             .expect("Failed to check if room exists; destroy");
         assert!(!exists, "Room should not exist after destruction");
     }
+}
+
+#[allow(unused_labels)]
+#[tokio::test]
+async fn participants_e2e() {
+    let default_timeout = Duration::from_secs(4);
+    let room_id = JanusId::Uint(rand::random::<u64>().into());
+    let admin = make_videoroom_attachment().await.0;
+    let (alice_handle, mut alice_events) = make_videoroom_attachment().await;
+    let (bob_handle, mut bob_events) = make_videoroom_attachment().await;
+    let (eve_handle, mut eve_events) = make_videoroom_attachment().await;
+
+    admin
+        .create_room(Some(room_id.clone()), default_timeout)
+        .await
+        .expect("Admin failed to create room; creation");
+
+    // Alice joins the room
+    let alice = {
+        let display = Some("Alice".to_string());
+        alice_handle
+            .join_as_publisher(
+                VideoRoomPublisherJoinParams {
+                    room: room_id.clone(),
+                    optional: VideoRoomPublisherJoinParamsOptional {
+                        display: display.clone(),
+                        ..Default::default()
+                    },
+                },
+                None,
+                default_timeout,
+            )
+            .await
+            .expect("Alice failed to join room");
+
+        let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
+            id,
+            room,
+            publishers,
+            ..
+        }) = alice_events
+            .recv()
+            .await
+            .expect("Alice failed to receive event")
+        else {
+            panic!("Alice received unexpected event")
+        };
+
+        assert_eq!(room, room_id, "Alice should join correct room");
+        assert_eq!(publishers, vec![], "No publishers should be in room");
+
+        VideoRoomParticipant {
+            id,
+            display,
+            publisher: false,
+            talking: Some(false),
+        }
+    };
 }
 
 async fn make_videoroom_attachment() -> (VideoRoomHandle, UnboundedReceiver<PluginEvent>) {
