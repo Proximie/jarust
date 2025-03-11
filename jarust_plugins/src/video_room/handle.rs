@@ -268,7 +268,6 @@ impl VideoRoomHandle {
     /// A successful join will result in a [`VideoRoomEvent::RoomJoined`](super::events::VideoRoomEvent::RoomJoined) event,
     /// which will contain a list of the currently active (as in publishing via WebRTC) publishers,
     /// and optionally a list of passive attendees (but only if the room was configured with notify_joining set to TRUE)
-    #[cfg(feature = "__experimental")]
     pub async fn join_as_publisher(
         &self,
         params: VideoRoomPublisherJoinParams,
@@ -281,9 +280,9 @@ impl VideoRoomHandle {
 
         match jsep {
             None => self.handle.send_waiton_ack(message, timeout).await?,
-            Some(ep) => {
+            Some(jsep) => {
                 self.handle
-                    .send_waiton_ack_with_jsep(message, ep, timeout)
+                    .send_waiton_ack_with_jsep(message, jsep, timeout)
                     .await?
             }
         };
