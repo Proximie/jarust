@@ -198,7 +198,91 @@ async fn participants_e2e() {
         };
 
         assert_eq!(room, room_id, "Alice should join correct room");
-        assert_eq!(publishers, vec![], "No publishers should be in room");
+        assert_eq!(publishers, vec![], "No active publishers should be in room");
+
+        VideoRoomParticipant {
+            id,
+            display,
+            publisher: false,
+            talking: Some(false),
+        }
+    };
+
+    // Bob joins the room
+    let bob = {
+        let display = Some("Bob".to_string());
+        bob_handle
+            .join_as_publisher(
+                VideoRoomPublisherJoinParams {
+                    room: room_id.clone(),
+                    optional: VideoRoomPublisherJoinParamsOptional {
+                        display: display.clone(),
+                        ..Default::default()
+                    },
+                },
+                None,
+                default_timeout,
+            )
+            .await
+            .expect("Bob failed to join room");
+
+        let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
+            id,
+            room,
+            publishers,
+            ..
+        }) = bob_events
+            .recv()
+            .await
+            .expect("Bob failed to receive event")
+        else {
+            panic!("Bob received unexpected event")
+        };
+
+        assert_eq!(room, room_id, "Bob should join correct room");
+        assert_eq!(publishers, vec![], "No active publishers should be in room");
+
+        VideoRoomParticipant {
+            id,
+            display,
+            publisher: false,
+            talking: Some(false),
+        }
+    };
+
+    // Eve joins the room
+    let eve = {
+        let display = Some("Eve".to_string());
+        eve_handle
+            .join_as_publisher(
+                VideoRoomPublisherJoinParams {
+                    room: room_id.clone(),
+                    optional: VideoRoomPublisherJoinParamsOptional {
+                        display: display.clone(),
+                        ..Default::default()
+                    },
+                },
+                None,
+                default_timeout,
+            )
+            .await
+            .expect("Eve failed to join room");
+
+        let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
+            id,
+            room,
+            publishers,
+            ..
+        }) = eve_events
+            .recv()
+            .await
+            .expect("Eve failed to receive event")
+        else {
+            panic!("Eve received unexpected event")
+        };
+
+        assert_eq!(room, room_id, "Eve should join correct room");
+        assert_eq!(publishers, vec![], "No active publishers should be in room");
 
         VideoRoomParticipant {
             id,
