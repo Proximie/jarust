@@ -9,6 +9,8 @@ use jarust::plugins::video_room::params::VideoRoomDestroyParams;
 use jarust::plugins::video_room::params::VideoRoomEditParams;
 use jarust::plugins::video_room::params::VideoRoomEditParamsOptional;
 use jarust::plugins::video_room::params::VideoRoomExistsParams;
+use jarust::plugins::video_room::params::VideoRoomPublisherConfigureParams;
+use jarust::plugins::video_room::params::VideoRoomPublisherJoinAndConfigureParams;
 use jarust::plugins::video_room::params::VideoRoomPublisherJoinParams;
 use jarust::plugins::video_room::params::VideoRoomPublisherJoinParamsOptional;
 use jarust::plugins::video_room::responses::VideoRoomParticipant;
@@ -170,11 +172,18 @@ async fn participants_e2e() {
     let alice = {
         let display = Some("Alice".to_string());
         alice_handle
-            .join_as_publisher(
-                VideoRoomPublisherJoinParams {
-                    room: room_id.clone(),
-                    optional: VideoRoomPublisherJoinParamsOptional {
-                        display: display.clone(),
+            .publisher_join_and_configure(
+                VideoRoomPublisherJoinAndConfigureParams {
+                    join_params: VideoRoomPublisherJoinParams {
+                        room: room_id.clone(),
+                        optional: VideoRoomPublisherJoinParamsOptional {
+                            display: display.clone(),
+                            ..Default::default()
+                        },
+                    },
+                    configure_params: VideoRoomPublisherConfigureParams {
+                        audio: Some(false),
+                        video: Some(true),
                         ..Default::default()
                     },
                 },
@@ -182,7 +191,7 @@ async fn participants_e2e() {
                 default_timeout,
             )
             .await
-            .expect("Alice failed to join room");
+            .expect("Alice failed to join room and configure connection");
 
         let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
             id,
@@ -212,11 +221,18 @@ async fn participants_e2e() {
     let bob = {
         let display = Some("Bob".to_string());
         bob_handle
-            .join_as_publisher(
-                VideoRoomPublisherJoinParams {
-                    room: room_id.clone(),
-                    optional: VideoRoomPublisherJoinParamsOptional {
-                        display: display.clone(),
+            .publisher_join_and_configure(
+                VideoRoomPublisherJoinAndConfigureParams {
+                    join_params: VideoRoomPublisherJoinParams {
+                        room: room_id.clone(),
+                        optional: VideoRoomPublisherJoinParamsOptional {
+                            display: display.clone(),
+                            ..Default::default()
+                        },
+                    },
+                    configure_params: VideoRoomPublisherConfigureParams {
+                        audio: Some(false),
+                        video: Some(true),
                         ..Default::default()
                     },
                 },
@@ -224,7 +240,7 @@ async fn participants_e2e() {
                 default_timeout,
             )
             .await
-            .expect("Bob failed to join room");
+            .expect("Bob failed to join room and configure connection");
 
         let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
             id,

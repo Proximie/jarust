@@ -328,10 +328,9 @@ impl VideoRoomHandle {
     /// It's basically the same properties as those listed for publish , with the addition of a `streams` array that can be used
     /// to tweak individual streams (which is not available when publishing since in that case the stream doesn't exist yet).
     /// Notice that the configure request can also be used in renegotiations, to provide an updated SDP with changes to the published media.
-    #[cfg(feature = "__experimental")]
     pub async fn configure_publisher(
         &self,
-        params: VideoRoomConfigurePublisherParams,
+        params: VideoRoomPublisherConfigureParams,
         timeout: Duration,
     ) -> Result<(), jarust_interface::Error> {
         let mut message: Value = params.try_into()?;
@@ -355,16 +354,23 @@ impl VideoRoomHandle {
     }
 
     /// A combination of [VideoRoomHandle::join_as_publisher()] and [VideoRoomHandle::configure_publisher()]
-    #[cfg(feature = "__experimental")]
-    pub async fn join_and_configure(
+    pub async fn publisher_join_and_configure(
         &self,
-        join_and_configure_params: VideoRoomJoinAndConfigureParams,
+        params: VideoRoomPublisherJoinAndConfigureParams,
+        jsep: Option<Jsep>,
         timeout: Duration,
-    ) -> Result<(), jarust_interface::Error> {
-        let mut message: Value = join_and_configure_params.try_into()?;
+    ) -> Result<String, jarust_interface::Error> {
+        let mut message: Value = params.try_into()?;
         message["request"] = "joinandconfigure".into();
-        self.handle.send_waiton_ack(message, timeout).await?;
-        Ok(())
+        message["ptype"] = "publisher".into();
+        match jsep {
+            None => self.handle.send_waiton_ack(message, timeout).await,
+            Some(jsep) => {
+                self.handle
+                    .send_waiton_ack_with_jsep(message, jsep, timeout)
+                    .await
+            }
+        }
     }
 
     /// Start publishing in a room
