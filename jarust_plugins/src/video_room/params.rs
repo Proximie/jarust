@@ -419,8 +419,10 @@ make_dto!(
 make_dto!(VideoRoomSwitchParams, required { streams: Vec<VideoRoomSwitchStream> });
 
 make_dto!(
-    VideoRoomConfigurePublisherParams,
+    VideoRoomPublisherConfigureParams,
     optional {
+        audio: bool,
+        video: bool,
         /// bitrate cap to return via REMB;
         /// overrides the global room value if present (unless `bitrate_cap` is set)
         bitrate: u64,
@@ -459,12 +461,12 @@ make_dto!(
 );
 
 make_dto!(
-    VideoRoomJoinAndConfigureParams,
+    VideoRoomPublisherJoinAndConfigureParams,
     required {
         #[serde(flatten)]
         join_params: VideoRoomPublisherJoinParams,
         #[serde(flatten)]
-        configure_params: VideoRoomConfigurePublisherParams
+        configure_params: VideoRoomPublisherConfigureParams
     }
 );
 
