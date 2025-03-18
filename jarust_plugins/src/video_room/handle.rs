@@ -409,7 +409,6 @@ impl VideoRoomHandle {
     ///
     /// The subscriber is supposed to send a JSEP SDP answer back to the plugin by the means of this request,
     /// which in this case MUST be associated with a JSEP SDP answer but otherwise requires no arguments.
-    #[cfg(feature = "__experimental")]
     pub async fn start(
         &self,
         jsep: Jsep,
