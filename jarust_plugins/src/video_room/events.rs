@@ -558,6 +558,32 @@ mod tests {
     }
 
     #[test]
+    fn it_parse_kicked() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "event",
+                    "room": "room-id",
+                    "kicked": "participant-id"
+                }
+            }
+        });
+        let event = serde_json::from_value::<JaResponse>(raw_event).unwrap();
+        let event: PluginEvent = event.try_into().unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::VideoRoomEvent(VideoRoomEvent::Kicked {
+                room: JanusId::String("room-id".to_string()),
+                participant: JanusId::String("participant-id".to_string())
+            })
+        )
+    }
+
+    #[test]
     fn it_parse_configured_with_jsep() {
         let rsp = JaResponse {
             janus: ResponseType::Event(JaHandleEvent::PluginEvent {
