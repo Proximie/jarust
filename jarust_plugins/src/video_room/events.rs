@@ -64,6 +64,16 @@ enum VideoRoomEventDto {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 enum VideoRoomEventEventType {
+    Configured {
+        configured: String,
+        room: JanusId,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        audio_codec: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        video_codec: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        streams: Option<Vec<ConfiguredStream>>,
+    },
     PublishersEvent {
         room: JanusId,
         publishers: Vec<Publisher>,
@@ -75,16 +85,14 @@ enum VideoRoomEventEventType {
         room: JanusId,
         unpublished: JanusId,
     },
-    ConfiguredRsp {
-        configured: String,
+    Leaving {
         room: JanusId,
-        audio_codec: Option<String>,
-        video_codec: Option<String>,
-        streams: Vec<ConfiguredStream>,
+        leaving: String,
+        reason: String,
     },
-    LeavingEvent {
+    Kicked {
+        kicked: JanusId,
         room: JanusId,
-        leaving: JanusId,
     },
     StartedRsp {
         started: String,
@@ -147,7 +155,11 @@ pub enum VideoRoomEvent {
         publishers: Vec<Publisher>,
         attendees: Option<Vec<Attendee>>,
     },
-    LeftRoom {
+    Leaving {
+        room: JanusId,
+        reason: String,
+    },
+    Kicked {
         room: JanusId,
         participant: JanusId,
     },
@@ -177,7 +189,7 @@ pub enum VideoRoomEvent {
         room: JanusId,
         audio_codec: Option<String>,
         video_codec: Option<String>,
-        streams: Vec<ConfiguredStream>,
+        streams: Option<Vec<ConfiguredStream>>,
     },
     /// Sent back to a publisher session after a successful [publish](super::handle::VideoRoomHandle::publish) or
     /// [configure_publisher](super::handle::VideoRoomHandle::configure_publisher) request
@@ -185,7 +197,7 @@ pub enum VideoRoomEvent {
         room: JanusId,
         audio_codec: Option<String>,
         video_codec: Option<String>,
-        streams: Vec<ConfiguredStream>,
+        streams: Option<Vec<ConfiguredStream>>,
         jsep: Jsep,
     },
     /// When configuring the room to request the ssrc-audio-level RTP extension,
@@ -317,7 +329,7 @@ impl TryFrom<JaResponse> for PluginEvent {
                                         id: unpublished,
                                     }
                                 }
-                                EventDto::Event(Event::ConfiguredRsp {
+                                EventDto::Event(Event::Configured {
                                     room,
                                     audio_codec,
                                     video_codec,
@@ -341,10 +353,13 @@ impl TryFrom<JaResponse> for PluginEvent {
                                         }
                                     }
                                 }
-                                EventDto::Event(Event::LeavingEvent { room, leaving }) => {
-                                    VideoRoomEvent::LeftRoom {
+                                EventDto::Event(Event::Leaving { room, reason, .. }) => {
+                                    VideoRoomEvent::Leaving { room, reason }
+                                }
+                                EventDto::Event(Event::Kicked { kicked, room }) => {
+                                    VideoRoomEvent::Kicked {
                                         room,
-                                        participant: leaving,
+                                        participant: kicked,
                                     }
                                 }
                                 EventDto::Event(Event::StartedRsp { room, .. }) => {
@@ -522,7 +537,8 @@ mod tests {
                     data: PluginInnerData::Data(json!({
                        "videoroom": "event",
                        "room": 8146468u64,
-                       "leaving": "ok"
+                       "leaving": "ok",
+                       "reason": "I'm out"
                     })),
                 },
             }),
@@ -534,9 +550,9 @@ mod tests {
         let event: PluginEvent = rsp.try_into().unwrap();
         assert_eq!(
             event,
-            PluginEvent::VideoRoomEvent(VideoRoomEvent::LeftRoom {
+            PluginEvent::VideoRoomEvent(VideoRoomEvent::Leaving {
                 room: JanusId::Uint(8146468.into()),
-                participant: JanusId::String("ok".to_string())
+                reason: "I'm out".to_string()
             })
         )
     }
@@ -589,7 +605,7 @@ mod tests {
                 room: JanusId::Uint(8146468.into()),
                 audio_codec: Some("opus".to_string()),
                 video_codec: Some("h264".to_string()),
-                streams: vec![
+                streams: Some(vec![
                     ConfiguredStream {
                         media_type: "audio".to_string(),
                         mindex: 0,
@@ -607,7 +623,7 @@ mod tests {
                         h264_profile: Some("42e01f".to_string()),
                         ..Default::default()
                     }
-                ],
+                ]),
                 jsep: Jsep {
                     jsep_type: JsepType::Answer,
                     trickle: Some(false),
