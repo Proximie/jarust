@@ -2,7 +2,7 @@
 
 Thank you for investing your time in helping out with Jarust's development.
 
-If you notice you're missing any particular piece of information here, please [open an issue](https://github.com/Ghamza-Jd/jarust/issues/new) or pull request.
+If you notice you're missing any particular piece of information here, please [open an issue](https://github.com/Proximie/jarust/issues/new) or pull request.
 
 ## Bird's-eye view of Jarust
 
