@@ -169,7 +169,7 @@ async fn participants_e2e() {
         .expect("Admin failed to create room; creation");
 
     // Alice joins the room
-    let alice = {
+    let _alice = {
         let display = Some("Alice".to_string());
         alice_handle
             .publisher_join_and_configure(
@@ -218,7 +218,7 @@ async fn participants_e2e() {
     };
 
     // Bob joins the room
-    let bob = {
+    let _bob = {
         let display = Some("Bob".to_string());
         bob_handle
             .publisher_join_and_configure(
@@ -267,7 +267,7 @@ async fn participants_e2e() {
     };
 
     // Eve joins the room
-    let eve = {
+    let _eve = {
         let display = Some("Eve".to_string());
         eve_handle
             .join_as_publisher(
