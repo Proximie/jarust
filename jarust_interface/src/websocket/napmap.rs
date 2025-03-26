@@ -1,34 +1,75 @@
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::future::Future;
 use std::hash::Hash;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::Context;
+use std::task::Poll;
 use tokio::sync::Mutex as AsyncMutex;
-use tokio::sync::Notify;
 use tokio::sync::RwLock as AsyncRwLock;
+
+struct WaitFuture<K, V> {
+    key: K,
+    map: Arc<AsyncRwLock<IndexMap<K, V>>>,
+    wakers: Arc<AsyncMutex<HashMap<K, Vec<std::task::Waker>>>>,
+}
+
+impl<K, V> Future for WaitFuture<K, V>
+where
+    K: Eq + Hash + Clone + Debug + Unpin,
+    V: Clone + Debug + Unpin,
+{
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.get_mut();
+
+        // Check if the key exists in the map
+        if this
+            .map
+            .try_read()
+            .map(|guard| guard.contains_key(&this.key))
+            .unwrap_or(false)
+        {
+            return Poll::Ready(());
+        }
+
+        // Add our waker to the list of wakers for this key
+        if let Ok(mut wakers) = this.wakers.try_lock() {
+            wakers
+                .entry(this.key.clone())
+                .or_insert_with(Vec::new)
+                .push(cx.waker().clone());
+        }
+
+        Poll::Pending
+    }
+}
 
 #[derive(Debug)]
 pub struct NapMap<K, V>
 where
-    K: Eq + Hash + Clone + Debug,
-    V: Clone + Debug,
+    K: Eq + Hash + Clone + Debug + Unpin,
+    V: Clone + Debug + Unpin,
 {
     map: Arc<AsyncRwLock<IndexMap<K, V>>>,
-    notifiers: Arc<AsyncMutex<HashMap<K, Arc<Notify>>>>,
+    wakers: Arc<AsyncMutex<HashMap<K, Vec<std::task::Waker>>>>,
     bound: usize,
 }
 
 impl<K, V> NapMap<K, V>
 where
-    K: Eq + Hash + Clone + Debug,
-    V: Clone + Debug,
+    K: Eq + Hash + Clone + Debug + Unpin,
+    V: Clone + Debug + Unpin,
 {
     pub fn new(buffer: usize) -> Self {
         assert!(buffer > 0, "buffer > 0");
         tracing::trace!("Created new NapMap");
         Self {
             map: Arc::new(AsyncRwLock::new(IndexMap::with_capacity(buffer))),
-            notifiers: Arc::new(AsyncMutex::new(HashMap::new())),
+            wakers: Arc::new(AsyncMutex::new(HashMap::new())),
             bound: buffer,
         }
     }
@@ -44,9 +85,12 @@ where
         map.insert(key.clone(), value);
         drop(map);
 
-        if let Some(notify) = self.notifiers.lock().await.remove(&key) {
-            notify.notify_waiters();
-            tracing::trace!("Notified waiting tasks");
+        // Wake up all waiting tasks for this key
+        if let Some(wakers) = self.wakers.lock().await.remove(&key) {
+            for waker in wakers {
+                waker.wake();
+            }
+            tracing::trace!("Woke up waiting tasks");
         }
     }
 
@@ -58,15 +102,14 @@ where
             return self.map.read().await.get(&key).cloned();
         }
 
-        let mut notifiers = self.notifiers.lock().await;
-        let notify = notifiers
-            .entry(key.clone())
-            .or_insert(Arc::new(Notify::new()))
-            .clone();
-        drop(notifiers);
-
+        // Wait for the key to be available
         tracing::trace!("Waiting for key");
-        notify.notified().await;
+        WaitFuture {
+            key: key.clone(),
+            map: self.map.clone(),
+            wakers: self.wakers.clone(),
+        }
+        .await;
         tracing::trace!("Key is available");
         self.map.read().await.get(&key).cloned()
     }
