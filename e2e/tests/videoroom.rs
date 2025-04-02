@@ -193,7 +193,7 @@ async fn participants_e2e() {
             .await
             .expect("Alice failed to join room and configure connection");
 
-        let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
+        let PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomJoined {
             id,
             room,
             publishers,
@@ -242,7 +242,7 @@ async fn participants_e2e() {
             .await
             .expect("Bob failed to join room and configure connection");
 
-        let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
+        let PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomJoined {
             id,
             room,
             publishers,
@@ -284,7 +284,7 @@ async fn participants_e2e() {
             .await
             .expect("Eve failed to join room");
 
-        let PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
+        let PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomJoined {
             id,
             room,
             publishers,

@@ -17,7 +17,7 @@ use serde_json::Value;
 #[serde(tag = "videoroom")]
 enum VideoRoomEventDto {
     #[serde(rename = "joined")]
-    PublisherJoined {
+    Joined {
         id: JanusId,
         room: JanusId,
         private_id: u64,
@@ -132,28 +132,26 @@ pub enum VideoRoomEvent {
         /// ID of the room the participant joined into
         room: JanusId,
         /// display name of the new participant
-        display: Option<String>,
+        description: Option<String>,
+        private_id: u64,
+        publishers: Vec<Publisher>,
     },
     /// Sent to all participants if a new participant joins
     RoomJoinedWithJsep {
         /// unique ID of the new participant
         id: JanusId,
+        /// ID of the room the participant joined into
+        room: JanusId,
         /// display name of the new participant
-        display: Option<String>,
+        description: Option<String>,
+        private_id: u64,
+        publishers: Vec<Publisher>,
         jsep: Jsep,
     },
     /// Sent to all participants if a participant started publishing
     NewPublisher {
         room: JanusId,
         publishers: Vec<Publisher>,
-    },
-    PublisherJoined {
-        room: JanusId,
-        description: Option<String>,
-        id: JanusId,
-        private_id: u64,
-        publishers: Vec<Publisher>,
-        attendees: Option<Vec<Attendee>>,
     },
     Leaving {
         room: JanusId,
@@ -270,21 +268,33 @@ impl TryFrom<JaResponse> for PluginEvent {
                                 EventDto::NewPublisher { room, publishers } => {
                                     VideoRoomEvent::NewPublisher { room, publishers }
                                 }
-                                EventDto::PublisherJoined {
+                                EventDto::Joined {
                                     room,
                                     description,
                                     id,
                                     private_id,
                                     publishers,
-                                    attendees,
-                                } => VideoRoomEvent::PublisherJoined {
-                                    room,
-                                    description,
-                                    id,
-                                    private_id,
-                                    publishers,
-                                    attendees,
-                                },
+                                    ..
+                                } => {
+                                    if let Some(jsep) = value.jsep {
+                                        VideoRoomEvent::RoomJoinedWithJsep {
+                                            room,
+                                            description,
+                                            id,
+                                            private_id,
+                                            publishers,
+                                            jsep,
+                                        }
+                                    } else {
+                                        VideoRoomEvent::RoomJoined {
+                                            room,
+                                            description,
+                                            id,
+                                            private_id,
+                                            publishers,
+                                        }
+                                    }
+                                }
                                 EventDto::SubscriberAttached { room, streams } => {
                                     if let Some(jsep) = value.jsep {
                                         VideoRoomEvent::SubscriberAttachedWithJsep {
@@ -490,13 +500,55 @@ mod tests {
         let event: PluginEvent = rsp.try_into().unwrap();
         assert_eq!(
             event,
-            PluginEvent::VideoRoomEvent(VideoRoomEvent::PublisherJoined {
+            PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomJoined {
                 room: JanusId::Uint(8146468.into()),
                 description: Some("A brand new description!".to_string()),
                 id: JanusId::Uint(1337.into()),
                 private_id: 4113762326,
                 publishers: vec![],
-                attendees: Some(vec![])
+            })
+        )
+    }
+
+    #[test]
+    fn it_parse_joined_with_jsep() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "jsep": {
+                "type": "answer",
+                "sdp": "test_sdp"
+            },
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "joined",
+                    "room": 8146468u64,
+                    "description": "A brand new description!",
+                    "id": 1337,
+                    "private_id": 4113762326u64,
+                    "publishers": [],
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomJoinedWithJsep {
+                room: JanusId::Uint(8146468.into()),
+                description: Some("A brand new description!".to_string()),
+                id: JanusId::Uint(1337.into()),
+                private_id: 4113762326,
+                publishers: vec![],
+                jsep: Jsep {
+                    jsep_type: JsepType::Answer,
+                    sdp: "test_sdp".to_string(),
+                    trickle: None
+                }
             })
         )
     }
