@@ -77,9 +77,6 @@ pub struct Publisher {
     pub id: JanusId,
     /// display name of active publisher
     pub display: Option<String>,
-    /// true if this participant is a dummy publisher
-    pub dummy: bool,
-    pub streams: Vec<Stream>,
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
