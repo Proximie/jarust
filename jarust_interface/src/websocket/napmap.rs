@@ -14,6 +14,26 @@ struct WaitFuture<K, V> {
     key: K,
     map: Arc<AsyncRwLock<IndexMap<K, V>>>,
     wakers: Arc<AsyncMutex<HashMap<K, Vec<std::task::Waker>>>>,
+    waker_registered: bool,
+}
+
+impl<K, V> WaitFuture<K, V>
+where
+    K: Eq + Hash + Clone + Debug + Unpin,
+    V: Clone + Debug + Unpin,
+{
+    fn new(
+        key: K,
+        map: Arc<AsyncRwLock<IndexMap<K, V>>>,
+        wakers: Arc<AsyncMutex<HashMap<K, Vec<std::task::Waker>>>>,
+    ) -> Self {
+        Self {
+            key,
+            map,
+            wakers,
+            waker_registered: false,
+        }
+    }
 }
 
 impl<K, V> Future for WaitFuture<K, V>
@@ -36,12 +56,18 @@ where
             return Poll::Ready(());
         }
 
-        // Add our waker to the list of wakers for this key
-        if let Ok(mut wakers) = this.wakers.try_lock() {
-            wakers
-                .entry(this.key.clone())
-                .or_insert_with(Vec::new)
-                .push(cx.waker().clone());
+        // Try to register the waker if not already registered
+        if !this.waker_registered {
+            if let Ok(mut wakers) = this.wakers.try_lock() {
+                wakers
+                    .entry(this.key.clone())
+                    .or_insert_with(Vec::new)
+                    .push(cx.waker().clone());
+                this.waker_registered = true;
+            } else {
+                // If we can't get the lock, wake up immediately to try again
+                cx.waker().wake_by_ref();
+            }
         }
 
         Poll::Pending
@@ -104,12 +130,7 @@ where
 
         // Wait for the key to be available
         tracing::trace!("Waiting for key");
-        WaitFuture {
-            key: key.clone(),
-            map: self.map.clone(),
-            wakers: self.wakers.clone(),
-        }
-        .await;
+        WaitFuture::new(key.clone(), self.map.clone(), self.wakers.clone()).await;
         tracing::trace!("Key is available");
         self.map.read().await.get(&key).cloned()
     }
@@ -187,5 +208,113 @@ mod tests {
         napmap.insert(3, 3).await;
         napmap.insert(4, 4).await;
         assert_eq!(napmap.len().await, 3);
+    }
+
+    #[tokio::test]
+    async fn it_should_handle_concurrent_inserts_and_gets() {
+        let napmap = Arc::new(NapMap::new(10));
+        let mut handles = vec![];
+
+        // Spawn multiple tasks that insert different keys
+        for i in 0..5 {
+            let map = napmap.clone();
+            handles.push(tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(i * 100)).await;
+                map.insert(format!("key{}", i), i).await;
+            }));
+        }
+
+        // Spawn multiple tasks that get different keys
+        for i in 0..5 {
+            let map = napmap.clone();
+            handles.push(tokio::spawn(async move {
+                let res = map.get(format!("key{}", i)).await.unwrap();
+                assert_eq!(res, i);
+            }));
+        }
+
+        // Wait for all tasks to complete
+        for handle in handles {
+            handle.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn it_should_handle_rapid_successive_inserts() {
+        let napmap = Arc::new(NapMap::new(5));
+        let mut handles = vec![];
+
+        for i in 0..10 {
+            let map = napmap.clone();
+            handles.push(tokio::spawn(async move {
+                map.insert(i, i).await;
+            }));
+        }
+
+        for handle in handles {
+            handle.await.unwrap();
+        }
+
+        assert_eq!(napmap.len().await, 5);
+
+        for i in 0..5 {
+            assert_eq!(napmap.get(i).await.unwrap(), i);
+        }
+
+        for i in 5..10 {
+            assert_eq!(napmap.get(i).await.unwrap(), i);
+        }
+    }
+
+    #[tokio::test]
+    async fn it_should_handle_get_before_insert() {
+        let napmap = Arc::new(NapMap::new(10));
+        let mut handles = vec![];
+
+        // Spawn a task that gets a key before it's inserted
+        let map = napmap.clone();
+        handles.push(tokio::spawn(async move {
+            let res = map.get("key").await.unwrap();
+            assert_eq!(res, 42);
+        }));
+
+        // Spawn a task that inserts the key after a delay
+        let map = napmap.clone();
+        handles.push(tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            map.insert("key", 42).await;
+        }));
+
+        // Wait for both tasks to complete
+        for handle in handles {
+            handle.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn it_should_handle_multiple_gets_for_same_key() {
+        let napmap = Arc::new(NapMap::new(10));
+        let mut handles = vec![];
+
+        // Spawn multiple tasks that get the same key
+        for _ in 0..5 {
+            let map = napmap.clone();
+            handles.push(tokio::spawn(async move {
+                let res = map.get("key").await.unwrap();
+                assert_eq!(res, 42);
+            }));
+        }
+
+        // Spawn a task that inserts the key
+        let map = napmap.clone();
+        handles.push(tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            map.insert("key", 42).await;
+        }));
+
+        // Wait for all tasks to complete
+        for handle in handles {
+            handle.await.unwrap();
+        }
     }
 }
