@@ -325,11 +325,13 @@ impl VideoRoomHandle {
     /// as soon as the publisher goes away, other participants are notified so that the related subscriber handles
     /// can be removed/updated accordingly as well. As such, these subscriber sessions are dependent on feedback
     /// obtained by publishers, and can't exist on their own.
+    #[tracing::instrument(level = tracing::Level::DEBUG, skip_all)]
     pub async fn legacy_join_as_subscriber(
         &self,
         params: VideoRoomLegacySubscriberJoinParams,
         timeout: Duration,
     ) -> Result<String, jarust_interface::Error> {
+        tracing::info!(plugin = "videoroom", "Joining as subscriber");
         let mut message: Value = params.try_into()?;
         message["request"] = "join".into();
         message["ptype"] = "subscriber".into();
@@ -423,11 +425,13 @@ impl VideoRoomHandle {
     ///
     /// The subscriber is supposed to send a JSEP SDP answer back to the plugin by the means of this request,
     /// which in this case MUST be associated with a JSEP SDP answer but otherwise requires no arguments.
+    #[tracing::instrument(level = tracing::Level::DEBUG, skip_all)]
     pub async fn start(
         &self,
         jsep: Jsep,
         timeout: Duration,
     ) -> Result<(), jarust_interface::Error> {
+        tracing::info!(plugin = "videoroom", "Start subscriber");
         self.handle
             .send_waiton_ack_with_jsep(json!({"request": "start"}), jsep, timeout)
             .await?;
