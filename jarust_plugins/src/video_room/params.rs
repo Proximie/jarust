@@ -323,6 +323,16 @@ make_dto!(
 );
 
 make_dto!(
+    VideoRoomLegacySubscriberJoinParams,
+    required {
+        /// unique ID of the publisher to subscribe to
+        feed: JanusId,
+        /// unique ID of the room to subscribe to
+        room: JanusId
+    }
+);
+
+make_dto!(
     VideoRoomSubscriberJoinParams,
     required { room: JanusId },
     optional {

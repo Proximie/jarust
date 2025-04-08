@@ -305,22 +305,36 @@ impl VideoRoomHandle {
     pub async fn join_as_subscriber(
         &self,
         params: VideoRoomSubscriberJoinParams,
-        jsep: Option<Jsep>,
         timeout: Duration,
-    ) -> Result<(), jarust_interface::Error> {
+    ) -> Result<String, jarust_interface::Error> {
         let mut message: Value = params.try_into()?;
         message["request"] = "join".into();
         message["ptype"] = "subscriber".into();
 
-        match jsep {
-            None => self.handle.send_waiton_ack(message, timeout).await?,
-            Some(ep) => {
-                self.handle
-                    .send_waiton_ack_with_jsep(message, ep, timeout)
-                    .await?
-            }
-        };
-        Ok(())
+        self.handle.send_waiton_ack(message, timeout).await
+    }
+
+    /// Join a room as a subscriber the legacy way
+    ///
+    /// In a VideoRoom, subscribers are NOT participants, but simply handles that will be used exclusively to
+    /// receive media from one or more publishers in the room. Since they're not participants per se,
+    /// they're basically streams that can be (and typically are) associated to publisher handles
+    /// as the ones we introduced in the previous section, whether active or not.
+    /// In fact, the typical use case is publishers being notified about new participants becoming active in the room,
+    /// and as a result new subscriber sessions being created to receive their media streams;
+    /// as soon as the publisher goes away, other participants are notified so that the related subscriber handles
+    /// can be removed/updated accordingly as well. As such, these subscriber sessions are dependent on feedback
+    /// obtained by publishers, and can't exist on their own.
+    pub async fn legacy_join_as_subscriber(
+        &self,
+        params: VideoRoomLegacySubscriberJoinParams,
+        timeout: Duration,
+    ) -> Result<String, jarust_interface::Error> {
+        let mut message: Value = params.try_into()?;
+        message["request"] = "join".into();
+        message["ptype"] = "subscriber".into();
+
+        self.handle.send_waiton_ack(message, timeout).await
     }
 
     /// Tweak some of the properties of an active publisher session
