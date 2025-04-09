@@ -1,1 +1,176 @@
+use crate::JanusId;
+use serde::Serialize;
+use std::collections::HashSet;
 
+make_dto!(
+    LegacyVideoRoomCreateParams,
+    optional {
+        /// Can be configured in plugin settings. If set, rooms can be created via API only if this key is provided in the request
+        admin_key: String,
+        /// Room ID, chosen by plugin if missing
+        room: JanusId,
+        /// pretty name of the room
+        description: String,
+        /// whether the room should appear in a list request
+        is_private: bool,
+        /// array of string tokens users can use to join this room
+        allowed: Vec<String>,
+        /// password required to edit/destroy the room
+        secret: String,
+        /// password required to join the room
+        pin: String,
+        /// whether subscriptions are required to provide a valid private_id to associate with a publisher, default=false
+        require_pvtid: bool,
+        /// whether access to the room requires signed tokens; default=false, only works if signed tokens are used in the core as well
+        signed_tokens: bool,
+        /// max video bitrate for senders (e.g., 128000)
+        bitrate: u64,
+        /// whether the above cap should act as a limit to dynamic bitrate changes by publishers, default=false
+        bitrate_cap: bool,
+        /// send a FIR to publishers every fir_freq seconds (0=disable)
+        fir_freq: u64,
+        /// max number of concurrent senders (e.g., 6 for a video conference or 1 for a webinar, default=3)
+        publishers: u64,
+        /// audio codec to force on publishers, default=opus
+        /// can be a comma separated list in order of preference, e.g., `opus,pcmu`
+        /// opus|g722|pcmu|pcma|isac32|isac16
+        audiocodec: LegacyVideoRoomAudioCodecList,
+        /// video codec to force on publishers, default=vp8
+        /// can be a comma separated list in order of preference, e.g., `vp9,vp8,h264`
+        /// vp8|vp9|h264|av1|h265
+        videocodec: LegacyVideoRoomVideoCodecList,
+        /// VP9-specific profile to prefer (e.g., "2" for "profile-id=2")
+        vp9_profile: String,
+        /// H.264-specific profile to prefer (e.g., "42e01f" for "profile-level-id=42e01f")
+        h264_profile: String,
+        /// whether inband FEC must be negotiated; only works for Opus, default=true
+        opus_fec: bool,
+        /// whether DTX must be negotiated; only works for Opus, default=false
+        opus_dtx: bool,
+        /// whether the ssrc-audio-level RTP extension must be negotiated for new joins, default=true
+        audiolevel_ext: bool,
+        /// whether to emit event to other users or not
+        audiolevel_event: bool,
+        /// number of packets with audio level (default=100, 2 seconds)
+        audio_active_packets: u64,
+        /// average value of audio level (127=muted, 0='too loud', default=25)
+        audio_level_average: u64,
+        /// whether the video-orientation RTP extension must be negotiated/used or not for new publishers, default=true
+        videoorient_ext: bool,
+        /// whether the playout-delay RTP extension must be negotiated/used or not for new publishers, default=true
+        playoutdelay_ext: bool,
+        /// whether the transport wide CC RTP extension must be negotiated/used or not for new publishers, default=true
+        transport_wide_cc_ext: bool,
+        /// whether to record the room or not, default=false
+        record: bool,
+        /// folder where recordings should be stored, when enabled
+        record_dir: String,
+        /// whether recording can only be started/stopped if the secret is provided, or using the global enable_recording request, default=false
+        lock_record: bool,
+        /// whether the room should be saved in the config file, default=false
+        permanent: bool,
+        /// optional, whether to notify all participants when a new participant joins the room. default=false
+        /// The Videoroom plugin by design only notifies new feeds (publishers), and enabling this may result in extra notification traffic.
+        /// This flag is particularly useful when enabled with `require_pvtid` for admin to manage listening-only participants.
+        notify_joining: bool,
+        /// whether all participants are required to publish and subscribe using end-to-end media encryption, e.g., via Insertable Streams; default=false
+        require_e2ee: bool,
+        /// whether a dummy publisher should be created in this room, with one separate m-line for each codec supported in the room;
+        /// this is useful when there's a need to create subscriptions with placeholders for some or all m-lines, even when they aren't used yet; default=false
+        dummy_publisher: bool,
+        /// in case `dummy_publisher` is set to `true`, array of codecs to offer, optionally with a fmtp attribute to match (codec/fmtp properties).
+        /// If not provided, all codecs enabled in the room are offered, with no fmtp. Notice that the fmtp is parsed, and only a few codecs are supported.
+        dummy_streams: bool,
+    }
+);
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum VideoRoomAudioCodec {
+    OPUS,
+    G722,
+    PCMU,
+    PCMA,
+    ISAC32,
+    ISAC16,
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+pub struct LegacyVideoRoomAudioCodecList {
+    pub codecs: Vec<VideoRoomAudioCodec>,
+}
+
+impl LegacyVideoRoomAudioCodecList {
+    pub fn new(codecs: Vec<VideoRoomAudioCodec>) -> Self {
+        let codecs = codecs
+            .into_iter()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        Self { codecs }
+    }
+}
+
+impl Serialize for LegacyVideoRoomAudioCodecList {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let codecs = self
+            .codecs
+            .iter()
+            .flat_map(|codec| match serde_json::to_string(codec) {
+                Ok(codec) => Some(codec.trim_matches('"').to_string()),
+                Err(_) => None,
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let state = serializer.serialize_str(&codecs)?;
+        Ok(state)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LegacyVideoRoomVideoCodec {
+    VP8,
+    VP9,
+    H264,
+    AV1,
+    H265,
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+pub struct LegacyVideoRoomVideoCodecList {
+    pub codecs: Vec<LegacyVideoRoomVideoCodec>,
+}
+
+impl LegacyVideoRoomVideoCodecList {
+    pub fn new(codecs: Vec<LegacyVideoRoomVideoCodec>) -> Self {
+        let codecs = codecs
+            .into_iter()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        Self { codecs }
+    }
+}
+
+impl Serialize for LegacyVideoRoomVideoCodecList {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let codecs = self
+            .codecs
+            .iter()
+            .flat_map(|codec| match serde_json::to_string(codec) {
+                Ok(codec) => Some(codec.trim_matches('"').to_string()),
+                Err(_) => None,
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let state = serializer.serialize_str(&codecs)?;
+        Ok(state)
+    }
+}
