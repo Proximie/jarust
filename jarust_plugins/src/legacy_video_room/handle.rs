@@ -1,9 +1,13 @@
 use super::params::LegacyVideoRoomCreateParams;
 use super::params::LegacyVideoRoomExistsParams;
 use super::params::LegacyVideoRoomKickParams;
+use super::params::LegacyVideoRoomPublisherConfigureParams;
+use super::params::LegacyVideoRoomPublisherJoinAndConfigureParams;
+use super::params::LegacyVideoRoomPublisherJoinParams;
 use super::responses::LegacyVideoRoomCreatedRsp;
 use crate::legacy_video_room::responses::LegacyVideoRoomExistsRsp;
 use jarust_core::prelude::*;
+use jarust_interface::japrotocol::Jsep;
 use jarust_rt::JaTask;
 use serde_json::Value;
 use std::ops::Deref;
@@ -14,6 +18,7 @@ pub struct LegacyVideoRoomHandle {
     task: Option<JaTask>,
 }
 
+// sync
 impl LegacyVideoRoomHandle {
     /// Create a new video room dynamically with the given configuration,
     /// as an alternative to using the configuration file
@@ -64,6 +69,59 @@ impl LegacyVideoRoomHandle {
         message["request"] = "kick".into();
 
         self.handle.send_waiton_rsp::<()>(message, timeout).await
+    }
+}
+
+// async
+impl LegacyVideoRoomHandle {
+    pub async fn publisher_join(
+        &self,
+        params: LegacyVideoRoomPublisherJoinParams,
+        jsep: Option<Jsep>,
+        timeout: Duration,
+    ) -> Result<String, jarust_interface::Error> {
+        let mut message: Value = params.try_into()?;
+        message["request"] = "join".into();
+        message["ptype"] = "publisher".into();
+
+        match jsep {
+            None => self.handle.send_waiton_ack(message, timeout).await,
+            Some(jsep) => {
+                self.handle
+                    .send_waiton_ack_with_jsep(message, jsep, timeout)
+                    .await
+            }
+        }
+    }
+
+    pub async fn configure_publisher(
+        &self,
+        params: LegacyVideoRoomPublisherConfigureParams,
+        timeout: Duration,
+    ) -> Result<(), jarust_interface::Error> {
+        let mut message: Value = params.try_into()?;
+        message["request"] = "configure".into();
+        self.handle.send_waiton_ack(message, timeout).await?;
+        Ok(())
+    }
+
+    pub async fn publisher_join_and_configure(
+        &self,
+        params: LegacyVideoRoomPublisherJoinAndConfigureParams,
+        jsep: Option<Jsep>,
+        timeout: Duration,
+    ) -> Result<String, jarust_interface::Error> {
+        let mut message: Value = params.try_into()?;
+        message["request"] = "joinandconfigure".into();
+        message["ptype"] = "publisher".into();
+        match jsep {
+            None => self.handle.send_waiton_ack(message, timeout).await,
+            Some(jsep) => {
+                self.handle
+                    .send_waiton_ack_with_jsep(message, jsep, timeout)
+                    .await
+            }
+        }
     }
 }
 
