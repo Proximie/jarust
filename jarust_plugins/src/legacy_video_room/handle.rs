@@ -1,10 +1,31 @@
+use super::params::LegacyVideoRoomCreateParams;
+use super::responses::LegacyVideoRoomCreatedRsp;
 use jarust_core::prelude::*;
 use jarust_rt::JaTask;
+use serde_json::Value;
 use std::ops::Deref;
+use std::time::Duration;
 
 pub struct LegacyVideoRoomHandle {
     handle: JaHandle,
     task: Option<JaTask>,
+}
+
+impl LegacyVideoRoomHandle {
+    #[tracing::instrument(level = tracing::Level::DEBUG, skip_all)]
+    pub async fn create_room(
+        &self,
+        params: LegacyVideoRoomCreateParams,
+        timeout: Duration,
+    ) -> Result<LegacyVideoRoomCreatedRsp, jarust_interface::Error> {
+        tracing::info!(plugin = "videoroom", "Sending create");
+        let mut message: Value = params.try_into()?;
+        message["request"] = "create".into();
+
+        self.handle
+            .send_waiton_rsp::<LegacyVideoRoomCreatedRsp>(message, timeout)
+            .await
+    }
 }
 
 impl PluginTask for LegacyVideoRoomHandle {
