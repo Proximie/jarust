@@ -4,11 +4,13 @@ use super::params::LegacyVideoRoomKickParams;
 use super::params::LegacyVideoRoomPublisherConfigureParams;
 use super::params::LegacyVideoRoomPublisherJoinAndConfigureParams;
 use super::params::LegacyVideoRoomPublisherJoinParams;
+use super::params::LegacyVideoRoomSubscriberJoinParams;
 use super::responses::LegacyVideoRoomCreatedRsp;
 use crate::legacy_video_room::responses::LegacyVideoRoomExistsRsp;
 use jarust_core::prelude::*;
 use jarust_interface::japrotocol::Jsep;
 use jarust_rt::JaTask;
+use serde_json::json;
 use serde_json::Value;
 use std::ops::Deref;
 use std::time::Duration;
@@ -121,6 +123,32 @@ impl LegacyVideoRoomHandle {
                     .await
             }
         }
+    }
+
+    pub async fn subscriber_join(
+        &self,
+        params: LegacyVideoRoomSubscriberJoinParams,
+        timeout: Duration,
+    ) -> Result<String, jarust_interface::Error> {
+        let mut message: Value = params.try_into()?;
+        message["request"] = "join".into();
+        message["ptype"] = "subscriber".into();
+        self.handle.send_waiton_ack(message, timeout).await
+    }
+
+    /// Complete the setup of the PeerConnection for a subscriber
+    ///
+    /// The subscriber is supposed to send a JSEP SDP answer back to the plugin by the means of this request,
+    /// which in this case MUST be associated with a JSEP SDP answer but otherwise requires no arguments.
+    pub async fn start(
+        &self,
+        jsep: Jsep,
+        timeout: Duration,
+    ) -> Result<(), jarust_interface::Error> {
+        self.handle
+            .send_waiton_ack_with_jsep(json!({"request": "start"}), jsep, timeout)
+            .await?;
+        Ok(())
     }
 }
 
