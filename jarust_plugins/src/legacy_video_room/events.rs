@@ -20,6 +20,12 @@ enum LegacyVideoRoomEventDto {
         description: Option<String>,
         publishers: Vec<LegacyVideoRoomPublisher>,
     },
+    #[serde(rename = "attached")]
+    SubscriberAttached {
+        id: JanusId,
+        room: JanusId,
+        display: Option<String>,
+    },
     #[serde(rename = "slow_link")]
     SlowLink,
     #[serde(rename = "event")]
@@ -29,6 +35,14 @@ enum LegacyVideoRoomEventDto {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 enum InnerLegacyVideoRoomEvent {
+    Unpublished {
+        room: JanusId,
+        unpublished: JanusId,
+    },
+    Started {
+        room: JanusId,
+        started: String,
+    },
     Leaving {
         room: JanusId,
         leaving: String,
@@ -53,7 +67,21 @@ pub enum LegacyVideoRoomEvent {
         publishers: Vec<LegacyVideoRoomPublisher>,
         jsep: Option<Jsep>,
     },
+    SubscriberAttached {
+        id: JanusId,
+        room: JanusId,
+        display: Option<String>,
+        jsep: Jsep,
+    },
     SlowLink,
+    Unpublished {
+        room: JanusId,
+        unpublished: JanusId,
+    },
+    SubscriberStarted {
+        room: JanusId,
+        started: String,
+    },
     Leaving {
         room: JanusId,
         reason: String,
@@ -102,8 +130,31 @@ impl TryFrom<JaResponse> for PluginEvent {
                                     publishers,
                                     jsep: value.jsep,
                                 },
+                                LegacyVideoRoomEventDto::SubscriberAttached {
+                                    id,
+                                    room,
+                                    display,
+                                } => {
+                                    if let Some(jsep) = value.jsep {
+                                        LegacyVideoRoomEvent::SubscriberAttached {
+                                            id,
+                                            room,
+                                            display,
+                                            jsep,
+                                        }
+                                    } else {
+                                        LegacyVideoRoomEvent::Other(data)
+                                    }
+                                }
                                 LegacyVideoRoomEventDto::SlowLink => LegacyVideoRoomEvent::SlowLink,
                                 LegacyVideoRoomEventDto::Event(event) => match event {
+                                    InnerLegacyVideoRoomEvent::Unpublished {
+                                        room,
+                                        unpublished,
+                                    } => LegacyVideoRoomEvent::Unpublished { room, unpublished },
+                                    InnerLegacyVideoRoomEvent::Started { room, started } => {
+                                        LegacyVideoRoomEvent::SubscriberStarted { room, started }
+                                    }
                                     InnerLegacyVideoRoomEvent::Leaving { room, reason, .. } => {
                                         LegacyVideoRoomEvent::Leaving { room, reason }
                                     }
