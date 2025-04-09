@@ -247,3 +247,41 @@ make_dto!(
         configure_params: LegacyVideoRoomPublisherConfigureParams
     }
 );
+
+make_dto!(
+    LegacyVideoRoomSubscriberJoinParams,
+    required {
+        /// unique ID of the room to subscribe in
+        room: JanusId,
+        /// unique ID of the publisher to subscribe to
+        feed: JanusId,
+    },
+    optional {
+        /// unique ID of the publisher that originated this request; optional, unless mandated by the room configuration
+        private_id: u64,
+        /// depending on whether or not the PeerConnection should be automatically closed when the publisher leaves; true by default
+        close_pc: bool,
+        /// depending on whether or not audio should be relayed; true by default
+        audio: bool,
+        /// depending on whether or not video should be relayed; true by default
+        video: bool,
+        /// depending on whether or not data should be relayed; true by default
+        data: bool,
+        /// whether or not audio should be negotiated; true by default if the publisher has audio
+        offer_audio: bool,
+        /// whether or not video should be negotiated; true by default if the publisher has video
+        offer_video: bool,
+        /// whether or not datachannels should be negotiated; true by default if the publisher has datachannels
+        offer_data: bool,
+        /// substream to receive (0-2), in case simulcasting is enabled; optional
+        substream: u8,
+        /// temporal layers to receive (0-2), in case simulcasting is enabled; optional
+        temporal: u8,
+        /// How much time (in us, default 250000) without receiving packets will make us drop to the substream below
+        fallback: u64,
+        /// spatial layer to receive (0-2), in case VP9-SVC is enabled; optional
+        spatial_layer: u8,
+        /// temporal layers to receive (0-2), in case VP9-SVC is enabled; optional
+        temporal_layer: u8,
+    }
+);
