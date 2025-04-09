@@ -8,3 +8,4 @@ Current plugins:
 - [x] AudioBridge
 - [x] Streaming (Experimental)
 - [x] VideoRoom (Experimental)
+- [x] Legacy VideoRoom (Experimental)
