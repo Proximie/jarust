@@ -94,15 +94,14 @@ impl LegacyVideoRoomHandle {
         }
     }
 
-    pub async fn configure_publisher(
+    pub async fn publisher_configure(
         &self,
         params: LegacyVideoRoomPublisherConfigureParams,
         timeout: Duration,
-    ) -> Result<(), jarust_interface::Error> {
+    ) -> Result<String, jarust_interface::Error> {
         let mut message: Value = params.try_into()?;
         message["request"] = "configure".into();
-        self.handle.send_waiton_ack(message, timeout).await?;
-        Ok(())
+        self.handle.send_waiton_ack(message, timeout).await
     }
 
     pub async fn publisher_join_and_configure(
