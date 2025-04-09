@@ -27,6 +27,7 @@ enum VideoRoomEventDto {
         #[serde(skip_serializing_if = "Option::is_none")]
         attendees: Option<Vec<Attendee>>,
     },
+    #[cfg(feature = "__experimental")]
     #[serde(rename = "destroyed")]
     DestroyRoom { room: JanusId },
     #[cfg(feature = "__experimental")]
@@ -135,6 +136,7 @@ pub enum PluginEvent {
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum VideoRoomEvent {
     /// Sent to all participants in the video room when the room is destroyed
+    #[cfg(feature = "__experimental")]
     RoomDestroyed {
         room: JanusId,
     },
@@ -161,8 +163,8 @@ pub enum VideoRoomEvent {
         publishers: Vec<Publisher>,
         jsep: Jsep,
     },
-    #[cfg(feature = "__experimental")]
     /// Sent to all participants if a participant started publishing
+    #[cfg(feature = "__experimental")]
     NewPublisher {
         room: JanusId,
         publishers: Vec<Publisher>,
@@ -175,8 +177,8 @@ pub enum VideoRoomEvent {
         room: JanusId,
         participant: JanusId,
     },
-    #[cfg(feature = "__experimental")]
     /// Sent back to a subscriber session after a successful [join_as_subscriber](super::handle::VideoRoomHandle::join_as_subscriber) request accompanied by a new JSEP SDP offer
+    #[cfg(feature = "__experimental")]
     SubscriberAttached {
         /// unique ID of the room the subscriber joined
         room: JanusId,
@@ -287,6 +289,7 @@ impl TryFrom<JaResponse> for PluginEvent {
                         let val = from_value::<EventDto>(data.clone());
                         match val {
                             Ok(event) => match event {
+                                #[cfg(feature = "__experimental")]
                                 EventDto::DestroyRoom { room } => {
                                     VideoRoomEvent::RoomDestroyed { room }
                                 }
