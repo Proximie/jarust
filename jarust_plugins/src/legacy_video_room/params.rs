@@ -188,3 +188,62 @@ make_dto!(
         secret: String
     }
 );
+
+make_dto!(
+    LegacyVideoRoomPublisherJoinParams,
+    required {
+        /// unique ID to register for the publisher;
+        /// optional, will be chosen by the plugin if missing
+        room: JanusId
+    },
+    optional {
+        /// unique ID to register for the publisher;
+        /// optional, will be chosen by the plugin if missing
+        id: JanusId,
+        /// display name for the publisher
+        display: String,
+        /// invitation token, in case the room has an ACL
+        token: String
+    }
+);
+
+make_dto!(
+    LegacyVideoRoomPublisherConfigureParams,
+    optional {
+        /// depending on whether or not audio should be relayed; true by default
+        audio: bool,
+        /// depending on whether or not video should be relayed; true by default
+        video: bool,
+        /// depending on whether or not data should be relayed; true by default
+        data: bool,
+        /// bitrate cap to return via REMB;
+        /// overrides the global room value if present (unless `bitrate_cap` is set)
+        bitrate: u64,
+        /// whether we should send this publisher a keyframe request
+        keyframe: bool,
+        /// whether this publisher should be recorded or not
+        record: bool,
+        /// if recording, the base path/file to use for the recording files
+        filename: String,
+        /// new display name to use in the room
+        display: String,
+        /// new `audio_active_packets` to overwrite in the room one
+        audio_active_packets: u64,
+        /// new `audio_level_average` to overwrite the room one
+        audio_level_average: u64,
+        /// minimum delay to enforce via the playout-delay RTP extension, in blocks of 10ms
+        min_delay: u64,
+        /// maximum delay to enforce via the playout-delay RTP extension, in blocks of 10ms
+        max_delay: u64
+    }
+);
+
+make_dto!(
+    LegacyVideoRoomPublisherJoinAndConfigureParams,
+    required {
+        #[serde(flatten)]
+        join_params: LegacyVideoRoomPublisherJoinParams,
+        #[serde(flatten)]
+        configure_params: LegacyVideoRoomPublisherConfigureParams
+    }
+);
