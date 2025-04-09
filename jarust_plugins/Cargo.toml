@@ -29,6 +29,7 @@ default = ["use-native-tls", "tokio-rt"]
 echo-test = []
 audio-bridge = []
 video-room = []
+legacy-video-room = []
 streaming = []
 ffi-compatible = []
 __experimental = []
@@ -38,6 +39,7 @@ __all-features = [
     "echo-test",
     "audio-bridge",
     "video-room",
+    "legacy-video-room",
     "streaming",
     "__experimental",
 ]

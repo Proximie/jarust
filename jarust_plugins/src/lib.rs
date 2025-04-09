@@ -32,5 +32,8 @@ pub mod video_room;
 #[cfg(feature = "streaming")]
 pub mod streaming;
 
+#[cfg(feature = "legacy-video-room")]
+pub mod legacy_video_room;
+
 pub mod common;
 pub use common::JanusId;
