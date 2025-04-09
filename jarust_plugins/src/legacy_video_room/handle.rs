@@ -136,6 +136,16 @@ impl LegacyVideoRoomHandle {
         self.handle.send_waiton_ack(message, timeout).await
     }
 
+    pub async fn subscriber_configure(
+        &self,
+        params: LegacyVideoRoomSubscriberJoinParams,
+        timeout: Duration,
+    ) -> Result<String, jarust_interface::Error> {
+        let mut message: Value = params.try_into()?;
+        message["request"] = "configure".into();
+        self.handle.send_waiton_ack(message, timeout).await
+    }
+
     /// Complete the setup of the PeerConnection for a subscriber
     ///
     /// The subscriber is supposed to send a JSEP SDP answer back to the plugin by the means of this request,
@@ -144,11 +154,10 @@ impl LegacyVideoRoomHandle {
         &self,
         jsep: Jsep,
         timeout: Duration,
-    ) -> Result<(), jarust_interface::Error> {
+    ) -> Result<String, jarust_interface::Error> {
         self.handle
             .send_waiton_ack_with_jsep(json!({"request": "start"}), jsep, timeout)
-            .await?;
-        Ok(())
+            .await
     }
 }
 

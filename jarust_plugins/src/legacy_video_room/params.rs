@@ -285,3 +285,33 @@ make_dto!(
         temporal_layer: u8,
     }
 );
+
+make_dto!(
+    LegacyVideoRoomSubscriberConfigureParams,
+    optional {
+        /// depending on whether audio should be relayed or not
+        audio: bool,
+        /// depending on whether video should be relayed or not
+        video: bool,
+        /// depending on whether datachannel messages should be relayed or not
+        data: bool,
+        /// substream to receive (0-2), in case simulcasting is enabled
+        substream: u8,
+        /// temporal layers to receive (0-2), in case simulcasting is enabled
+        temporal: u8,
+        /// How much time (in us, default 250000) without receiving packets will make us drop to the substream below
+        fallback: u64,
+        /// spatial layer to receive (0-2), in case VP9-SVC is enabled
+        spatial_layer: u8,
+        /// temporal layers to receive (0-2), in case VP9-SVC is enabled
+        temporal_layer: u8,
+        /// overrides the room audio_level_average for this user
+        audio_level_average: u64,
+        /// overrides the room audio_active_packets for this user
+        audio_active_packets: u64,
+        /// minimum delay to enforce via the playout-delay RTP extension, in blocks of 10ms
+        min_delay: u64,
+        /// maximum delay to enforce via the playout-delay RTP extension, in blocks of 10ms
+        max_delay: u64,
+    }
+);
