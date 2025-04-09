@@ -174,3 +174,17 @@ impl Serialize for LegacyVideoRoomVideoCodecList {
         Ok(state)
     }
 }
+
+make_dto!(LegacyVideoRoomExistsParams, required { room: JanusId });
+
+make_dto!(
+    LegacyVideoRoomKickParams,
+    required {
+        room: JanusId,
+        participant: JanusId
+    },
+    optional {
+        /// room secret, mandatory if configured
+        secret: String
+    }
+);

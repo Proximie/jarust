@@ -39,7 +39,7 @@ impl VideoRoomHandle {
         .await
     }
 
-    /// Create a new audio room dynamically with the given configuration,
+    /// Create a new video room dynamically with the given configuration,
     /// as an alternative to using the configuration file
     ///
     /// ### Note:
