@@ -1,3 +1,4 @@
+#[cfg(feature = "__experimental")]
 use crate::video_room::responses::AttachedStream;
 use crate::video_room::responses::Attendee;
 use crate::video_room::responses::ConfiguredStream;
@@ -28,21 +29,25 @@ enum VideoRoomEventDto {
     },
     #[serde(rename = "destroyed")]
     DestroyRoom { room: JanusId },
+    #[cfg(feature = "__experimental")]
     #[serde(rename = "publishers")]
     NewPublisher {
         room: JanusId,
         publishers: Vec<Publisher>,
     },
+    #[cfg(feature = "__experimental")]
     #[serde(rename = "attached")]
     SubscriberAttached {
         room: JanusId,
         streams: Vec<AttachedStream>,
     },
+    #[cfg(feature = "__experimental")]
     #[serde(rename = "updated")]
     SubscriberUpdated {
         room: JanusId,
         streams: Vec<AttachedStream>,
     },
+    #[cfg(feature = "__experimental")]
     #[serde(rename = "talking")]
     Talking {
         room: JanusId,
@@ -50,6 +55,7 @@ enum VideoRoomEventDto {
         #[serde(rename = "audio-level-dBov-avg")]
         audio_level: i16,
     },
+    #[cfg(feature = "__experimental")]
     #[serde(rename = "stopped-talking")]
     StoppedTalking {
         room: JanusId,
@@ -74,13 +80,16 @@ enum VideoRoomEventEventType {
         #[serde(skip_serializing_if = "Option::is_none")]
         streams: Option<Vec<ConfiguredStream>>,
     },
+    #[cfg(feature = "__experimental")]
     PublishersEvent {
         room: JanusId,
         publishers: Vec<Publisher>,
     },
+    #[cfg(feature = "__experimental")]
     UnpublishedRsp {
         unpublished: String,
     },
+    #[cfg(feature = "__experimental")]
     UnpublishedEvent {
         room: JanusId,
         unpublished: JanusId,
@@ -94,19 +103,23 @@ enum VideoRoomEventEventType {
         kicked: JanusId,
         room: JanusId,
     },
+    #[cfg(feature = "__experimental")]
     StartedRsp {
         started: String,
         room: JanusId,
     },
+    #[cfg(feature = "__experimental")]
     PausedRsp {
         paused: String,
     },
+    #[cfg(feature = "__experimental")]
     SwitchedRsp {
         switched: String,
         room: JanusId,
         changes: i64,
         streams: Vec<AttachedStream>,
     },
+    #[cfg(feature = "__experimental")]
     LeftRsp {
         left: String,
         room: JanusId,
@@ -148,6 +161,7 @@ pub enum VideoRoomEvent {
         publishers: Vec<Publisher>,
         jsep: Jsep,
     },
+    #[cfg(feature = "__experimental")]
     /// Sent to all participants if a participant started publishing
     NewPublisher {
         room: JanusId,
@@ -161,21 +175,25 @@ pub enum VideoRoomEvent {
         room: JanusId,
         participant: JanusId,
     },
+    #[cfg(feature = "__experimental")]
     /// Sent back to a subscriber session after a successful [join_as_subscriber](super::handle::VideoRoomHandle::join_as_subscriber) request accompanied by a new JSEP SDP offer
     SubscriberAttached {
         /// unique ID of the room the subscriber joined
         room: JanusId,
         streams: Vec<AttachedStream>,
     },
+    #[cfg(feature = "__experimental")]
     SubscriberAttachedWithJsep {
         room: JanusId,
         streams: Vec<AttachedStream>,
         jsep: Jsep,
     },
+    #[cfg(feature = "__experimental")]
     SubscriberUpdated {
         room: JanusId,
         streams: Vec<AttachedStream>,
     },
+    #[cfg(feature = "__experimental")]
     SubscriberSwitched {
         room: JanusId,
         changes: i64,
@@ -200,6 +218,7 @@ pub enum VideoRoomEvent {
     },
     /// When configuring the room to request the ssrc-audio-level RTP extension,
     /// ad-hoc events might be sent to all publishers if audiolevel_event is set to true
+    #[cfg(feature = "__experimental")]
     Talking {
         /// unique ID of the room the publisher is in
         room: JanusId,
@@ -210,6 +229,7 @@ pub enum VideoRoomEvent {
     },
     /// When configuring the room to request the ssrc-audio-level RTP extension,
     /// ad-hoc events might be sent to all publishers if audiolevel_event is set to true
+    #[cfg(feature = "__experimental")]
     StoppedTalking {
         /// unique ID of the room the publisher is in
         room: JanusId,
@@ -220,6 +240,7 @@ pub enum VideoRoomEvent {
     },
     /// As soon as the PeerConnection is gone, all the other participants will
     /// also be notified about the fact that the stream is no longer available
+    #[cfg(feature = "__experimental")]
     Unpublished {
         /// unique ID of the room the publisher is in
         room: JanusId,
@@ -227,14 +248,18 @@ pub enum VideoRoomEvent {
         id: JanusId,
     },
     /// Sent back to a publisher after a successful [unpublish](super::handle::VideoRoomHandle::unpublish) request
+    #[cfg(feature = "__experimental")]
     UnpublishedAsyncRsp,
     /// Sent back to a subscriber after a successful [start](super::handle::VideoRoomHandle::start) request
+    #[cfg(feature = "__experimental")]
     StartedAsyncRsp {
         room: JanusId,
     },
     /// Sent back to a subscriber after a successful [pause](super::handle::VideoRoomHandle::pause) request
+    #[cfg(feature = "__experimental")]
     PausedAsyncRsp,
     /// Sent back to a subscriber after a successful [leave](super::handle::VideoRoomHandle::leave) request
+    #[cfg(feature = "__experimental")]
     LeftAsyncRsp {
         room: JanusId,
     },
@@ -265,6 +290,7 @@ impl TryFrom<JaResponse> for PluginEvent {
                                 EventDto::DestroyRoom { room } => {
                                     VideoRoomEvent::RoomDestroyed { room }
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::NewPublisher { room, publishers } => {
                                     VideoRoomEvent::NewPublisher { room, publishers }
                                 }
@@ -295,6 +321,7 @@ impl TryFrom<JaResponse> for PluginEvent {
                                         }
                                     }
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::SubscriberAttached { room, streams } => {
                                     if let Some(jsep) = value.jsep {
                                         VideoRoomEvent::SubscriberAttachedWithJsep {
@@ -306,9 +333,11 @@ impl TryFrom<JaResponse> for PluginEvent {
                                         VideoRoomEvent::SubscriberAttached { room, streams }
                                     }
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::SubscriberUpdated { room, streams } => {
                                     VideoRoomEvent::SubscriberUpdated { room, streams }
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Talking {
                                     room,
                                     id,
@@ -318,6 +347,7 @@ impl TryFrom<JaResponse> for PluginEvent {
                                     id,
                                     audio_level,
                                 },
+                                #[cfg(feature = "__experimental")]
                                 EventDto::StoppedTalking {
                                     room,
                                     id,
@@ -327,12 +357,15 @@ impl TryFrom<JaResponse> for PluginEvent {
                                     id,
                                     audio_level,
                                 },
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Event(Event::PublishersEvent { room, publishers }) => {
                                     VideoRoomEvent::NewPublisher { room, publishers }
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Event(Event::UnpublishedRsp { .. }) => {
                                     VideoRoomEvent::UnpublishedAsyncRsp
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Event(Event::UnpublishedEvent { room, unpublished }) => {
                                     VideoRoomEvent::Unpublished {
                                         room,
@@ -372,12 +405,15 @@ impl TryFrom<JaResponse> for PluginEvent {
                                         participant: kicked,
                                     }
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Event(Event::StartedRsp { room, .. }) => {
                                     VideoRoomEvent::StartedAsyncRsp { room }
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Event(Event::PausedRsp { .. }) => {
                                     VideoRoomEvent::PausedAsyncRsp
                                 }
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Event(Event::SwitchedRsp {
                                     room,
                                     changes,
@@ -388,6 +424,7 @@ impl TryFrom<JaResponse> for PluginEvent {
                                     changes,
                                     streams,
                                 },
+                                #[cfg(feature = "__experimental")]
                                 EventDto::Event(Event::LeftRsp { room, .. }) => {
                                     VideoRoomEvent::LeftAsyncRsp { room }
                                 }
