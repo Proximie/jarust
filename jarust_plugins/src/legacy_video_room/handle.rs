@@ -4,6 +4,7 @@ use super::params::LegacyVideoRoomKickParams;
 use super::params::LegacyVideoRoomPublisherConfigureParams;
 use super::params::LegacyVideoRoomPublisherJoinAndConfigureParams;
 use super::params::LegacyVideoRoomPublisherJoinParams;
+use super::params::LegacyVideoRoomSubscriberConfigureParams;
 use super::params::LegacyVideoRoomSubscriberJoinParams;
 use super::responses::LegacyVideoRoomCreatedRsp;
 use crate::legacy_video_room::responses::LegacyVideoRoomExistsRsp;
@@ -138,7 +139,7 @@ impl LegacyVideoRoomHandle {
 
     pub async fn subscriber_configure(
         &self,
-        params: LegacyVideoRoomSubscriberJoinParams,
+        params: LegacyVideoRoomSubscriberConfigureParams,
         timeout: Duration,
     ) -> Result<String, jarust_interface::Error> {
         let mut message: Value = params.try_into()?;
