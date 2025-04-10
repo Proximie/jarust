@@ -35,6 +35,10 @@ enum LegacyVideoRoomEventDto {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 enum InnerLegacyVideoRoomEvent {
+    Configured {
+        configured: String,
+        room: JanusId,
+    },
     Unpublished {
         room: JanusId,
         unpublished: JanusId,
@@ -65,6 +69,10 @@ pub enum LegacyVideoRoomEvent {
         description: Option<String>,
         private_id: u64,
         publishers: Vec<LegacyVideoRoomPublisher>,
+        jsep: Option<Jsep>,
+    },
+    Configured {
+        room: JanusId,
         jsep: Option<Jsep>,
     },
     SubscriberAttached {
@@ -148,6 +156,12 @@ impl TryFrom<JaResponse> for PluginEvent {
                                 }
                                 LegacyVideoRoomEventDto::SlowLink => LegacyVideoRoomEvent::SlowLink,
                                 LegacyVideoRoomEventDto::Event(event) => match event {
+                                    InnerLegacyVideoRoomEvent::Configured { room, .. } => {
+                                        LegacyVideoRoomEvent::Configured {
+                                            room,
+                                            jsep: value.jsep,
+                                        }
+                                    }
                                     InnerLegacyVideoRoomEvent::Unpublished {
                                         room,
                                         unpublished,
