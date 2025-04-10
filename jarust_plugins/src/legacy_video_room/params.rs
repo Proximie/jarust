@@ -86,7 +86,7 @@ make_dto!(
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum VideoRoomAudioCodec {
+pub enum LegacyVideoRoomAudioCodec {
     OPUS,
     G722,
     PCMU,
@@ -97,11 +97,11 @@ pub enum VideoRoomAudioCodec {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
 pub struct LegacyVideoRoomAudioCodecList {
-    pub codecs: Vec<VideoRoomAudioCodec>,
+    pub codecs: Vec<LegacyVideoRoomAudioCodec>,
 }
 
 impl LegacyVideoRoomAudioCodecList {
-    pub fn new(codecs: Vec<VideoRoomAudioCodec>) -> Self {
+    pub fn new(codecs: Vec<LegacyVideoRoomAudioCodec>) -> Self {
         let codecs = codecs
             .into_iter()
             .collect::<HashSet<_>>()
