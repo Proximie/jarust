@@ -39,6 +39,10 @@ enum InnerLegacyVideoRoomEvent {
         configured: String,
         room: JanusId,
     },
+    NewPublishers {
+        room: JanusId,
+        publishers: Vec<LegacyVideoRoomPublisher>,
+    },
     Unpublished {
         room: JanusId,
         unpublished: JanusId,
@@ -74,6 +78,10 @@ pub enum LegacyVideoRoomEvent {
     Configured {
         room: JanusId,
         jsep: Option<Jsep>,
+    },
+    NewPublishers {
+        room: JanusId,
+        publishers: Vec<LegacyVideoRoomPublisher>,
     },
     SubscriberAttached {
         id: JanusId,
@@ -162,6 +170,10 @@ impl TryFrom<JaResponse> for PluginEvent {
                                             jsep: value.jsep,
                                         }
                                     }
+                                    InnerLegacyVideoRoomEvent::NewPublishers {
+                                        room,
+                                        publishers,
+                                    } => LegacyVideoRoomEvent::NewPublishers { room, publishers },
                                     InnerLegacyVideoRoomEvent::Unpublished {
                                         room,
                                         unpublished,
@@ -238,6 +250,44 @@ mod tests {
                     sdp: "test_sdp".to_string(),
                     trickle: None
                 })
+            })
+        )
+    }
+
+    #[test]
+    fn parse_new_publishers() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "event",
+                    "room": 8146468u64,
+                    "publishers": [
+                        {
+                            "id": 1337,
+                            "display": "A brand new publisher",
+                            "substream": 1
+                        }
+                    ]
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::NewPublishers {
+                room: JanusId::Uint(8146468.into()),
+                publishers: vec![LegacyVideoRoomPublisher {
+                    id: JanusId::Uint(1337.into()),
+                    display: Some("A brand new publisher".to_string()),
+                    substream: Some(1)
+                }]
             })
         )
     }
