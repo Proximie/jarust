@@ -192,3 +192,53 @@ impl TryFrom<JaResponse> for PluginEvent {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use jarust_interface::japrotocol::JsepType;
+    use serde_json::json;
+
+    #[test]
+    fn parse_joined_with_jsep() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "jsep": {
+                "type": "answer",
+                "sdp": "test_sdp"
+            },
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "joined",
+                    "room": 8146468u64,
+                    "description": "A brand new description!",
+                    "id": 1337,
+                    "private_id": 4113762326u64,
+                    "publishers": [],
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::RoomJoined {
+                room: JanusId::Uint(8146468.into()),
+                description: Some("A brand new description!".to_string()),
+                id: JanusId::Uint(1337.into()),
+                private_id: 4113762326,
+                publishers: vec![],
+                jsep: Some(Jsep {
+                    jsep_type: JsepType::Answer,
+                    sdp: "test_sdp".to_string(),
+                    trickle: None
+                })
+            })
+        )
+    }
+}
