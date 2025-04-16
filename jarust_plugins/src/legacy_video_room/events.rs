@@ -254,6 +254,41 @@ mod tests {
     }
 
     #[test]
+    fn parse_joined_without_jsep() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "joined",
+                    "room": 8146468u64,
+                    "description": "A brand new description!",
+                    "id": 1337,
+                    "private_id": 4113762326u64,
+                    "publishers": [],
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::RoomJoined {
+                room: JanusId::Uint(8146468.into()),
+                description: Some("A brand new description!".to_string()),
+                id: JanusId::Uint(1337.into()),
+                private_id: 4113762326,
+                publishers: vec![],
+                jsep: None
+            })
+        )
+    }
+
+    #[test]
     fn parse_new_publishers() {
         let raw_event = json!({
             "janus": "event",
@@ -290,5 +325,243 @@ mod tests {
                 }]
             })
         )
+    }
+
+    #[test]
+    fn parse_subscriber_attached() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "jsep": {
+                "type": "offer",
+                "sdp": "test_subscriber_sdp"
+            },
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "attached",
+                    "id": 1337,
+                    "room": 8146468u64,
+                    "display": "Test Display Name"
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::SubscriberAttached {
+                room: JanusId::Uint(8146468.into()),
+                id: JanusId::Uint(1337.into()),
+                display: Some("Test Display Name".to_string()),
+                jsep: Jsep {
+                    jsep_type: JsepType::Offer,
+                    sdp: "test_subscriber_sdp".to_string(),
+                    trickle: None
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn parse_slow_link() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "slow_link"
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::SlowLink)
+        );
+    }
+
+    #[test]
+    fn parse_configured() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "jsep": {
+                "type": "answer",
+                "sdp": "test_configured_sdp"
+            },
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "event",
+                    "room": 8146468u64,
+                    "configured": "ok"
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Configured {
+                room: JanusId::Uint(8146468.into()),
+                jsep: Some(Jsep {
+                    jsep_type: JsepType::Answer,
+                    sdp: "test_configured_sdp".to_string(),
+                    trickle: None
+                })
+            })
+        );
+    }
+
+    #[test]
+    fn parse_unpublished() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "event",
+                    "room": 8146468u64,
+                    "unpublished": 1337
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Unpublished {
+                room: JanusId::Uint(8146468.into()),
+                unpublished: JanusId::Uint(1337.into())
+            })
+        );
+    }
+
+    #[test]
+    fn parse_started() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "event",
+                    "room": 8146468u64,
+                    "started": "ok"
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::SubscriberStarted {
+                room: JanusId::Uint(8146468.into()),
+                started: "ok".to_string()
+            })
+        );
+    }
+
+    #[test]
+    fn parse_leaving() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "event",
+                    "room": 8146468u64,
+                    "leaving": "ok",
+                    "reason": "kicked"
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Leaving {
+                room: JanusId::Uint(8146468.into()),
+                reason: "kicked".to_string()
+            })
+        );
+    }
+
+    #[test]
+    fn parse_kicked() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "videoroom": "event",
+                    "room": 8146468u64,
+                    "kicked": 1337
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Kicked {
+                room: JanusId::Uint(8146468.into()),
+                participant: JanusId::Uint(1337.into())
+            })
+        );
+    }
+
+    #[test]
+    fn parse_error() {
+        let raw_event = json!({
+            "janus": "event",
+            "session_id": 7323526979899781u64,
+            "sender": 7967725809069290u64,
+            "plugindata": {
+                "plugin": "janus.plugin.videoroom",
+                "data": {
+                    "error_code": 426,
+                    "error": "No such room"
+                }
+            }
+        });
+        let event: PluginEvent = serde_json::from_value::<JaResponse>(raw_event)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            event,
+            PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Error {
+                error_code: 426,
+                error: "No such room".to_string()
+            })
+        );
     }
 }
