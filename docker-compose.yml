@@ -1,18 +1,36 @@
 services:
-  janus-gateway:
-    container_name: janus-dev-server
-    image: "canyan/janus-gateway:latest"
-    command: ["/usr/local/bin/janus", "-F", "/usr/local/etc/janus"]
+  janus-gateway-multistream:
+    container_name: janus-multistream
+    build:
+      context: .
+      dockerfile: docker/janus_multistream.dockerfile
     ports:
-      - "7088:7088"
-      - "7089:7089"
       - "8000:8000"
       - "8088:8088"
       - "8089:8089"
       - "8188:8188"
       - "8889:8889"
+      - "10000-10200:10000-10200/udp"
     volumes:
-      - "./server_config/janus.jcfg:/usr/local/etc/janus/janus.jcfg"
-      - "./server_config/janus.plugin.audiobridge.jcfg:/usr/local/etc/janus/janus.plugin.audiobridge.jcfg"
-      - "./server_config/janus.plugin.videoroom.jcfg:/usr/local/etc/janus/janus.plugin.videoroom.jcfg"
+      - "./server_config/janus.jcfg:/etc/janus/janus.jcfg"
+      - "./server_config/janus.plugin.audiobridge.jcfg:/etc/janus/janus.plugin.audiobridge.jcfg"
+      - "./server_config/janus.plugin.videoroom.jcfg:/etc/janus/janus.plugin.videoroom.jcfg"
+    restart: always
+
+  janus-gateway-legacy:
+    container_name: janus-legacy
+    build:
+      context: .
+      dockerfile: docker/janus_legacy.dockerfile
+    ports:
+      - "9000:8000"
+      - "9088:8088"
+      - "9089:8089"
+      - "9188:8188"
+      - "9889:8889"
+      - "11000-11200:10000-10200/udp"
+    volumes:
+      - "./server_config/janus.jcfg:/etc/janus/janus.jcfg"
+      - "./server_config/janus.plugin.audiobridge.jcfg:/etc/janus/janus.plugin.audiobridge.jcfg"
+      - "./server_config/janus.plugin.videoroom.jcfg:/etc/janus/janus.plugin.videoroom.jcfg"
     restart: always
