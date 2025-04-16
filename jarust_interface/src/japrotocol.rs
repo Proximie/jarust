@@ -103,7 +103,11 @@ pub enum GenericEvent {
     WebrtcUp,
     /// Whether Janus is reporting trouble sending/receiving (uplink: true/false) media on this PeerConnection.
     #[serde(rename = "slowlink")]
-    Slowlink,
+    Slowlink {
+        media: String,
+        uplink: bool,
+        lost: u32,
+    },
     #[serde(rename = "trickle")]
     Trickle,
 }
@@ -358,6 +362,31 @@ mod tests {
             transaction: Some("nNbmsbj33zLY".to_string()),
             sender: Some(77797716144085u64),
             session_id: Some(2158724686674557u64),
+            jsep: None,
+        };
+        assert_eq!(actual_event, expected);
+    }
+
+    #[test]
+    fn it_parse_slow_link_event() {
+        let event = json!({
+            "janus": "slowlink",
+            "sender": 2676358135723942u64,
+            "session_id": 1942958911060866u64,
+            "uplink": true,
+            "media": "audio",
+            "lost": 10
+        });
+        let actual_event = serde_json::from_value::<JaResponse>(event).unwrap();
+        let expected = JaResponse {
+            janus: ResponseType::Event(JaHandleEvent::GenericEvent(GenericEvent::Slowlink {
+                media: "audio".to_string(),
+                uplink: true,
+                lost: 10,
+            })),
+            transaction: None,
+            sender: Some(2676358135723942u64),
+            session_id: Some(1942958911060866u64),
             jsep: None,
         };
         assert_eq!(actual_event, expected);
