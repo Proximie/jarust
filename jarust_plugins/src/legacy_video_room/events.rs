@@ -281,7 +281,7 @@ mod tests {
                 room: JanusId::Uint(8146468.into()),
                 description: Some("A brand new description!".to_string()),
                 id: JanusId::Uint(1337.into()),
-                private_id: 4113762326,
+                private_id: Some(4113762326),
                 publishers: vec![],
                 jsep: None
             })
