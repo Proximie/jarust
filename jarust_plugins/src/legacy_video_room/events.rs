@@ -16,7 +16,7 @@ enum LegacyVideoRoomEventDto {
     Joined {
         id: JanusId,
         room: JanusId,
-        private_id: u64,
+        private_id: Option<u64>,
         description: Option<String>,
         publishers: Vec<LegacyVideoRoomPublisher>,
     },
@@ -71,7 +71,7 @@ pub enum LegacyVideoRoomEvent {
         room: JanusId,
         /// display name of the new participant
         description: Option<String>,
-        private_id: u64,
+        private_id: Option<u64>,
         publishers: Vec<LegacyVideoRoomPublisher>,
         jsep: Option<Jsep>,
     },
@@ -228,7 +228,6 @@ mod tests {
                     "room": 8146468u64,
                     "description": "A brand new description!",
                     "id": 1337,
-                    "private_id": 4113762326u64,
                     "publishers": [],
                 }
             }
@@ -243,7 +242,7 @@ mod tests {
                 room: JanusId::Uint(8146468.into()),
                 description: Some("A brand new description!".to_string()),
                 id: JanusId::Uint(1337.into()),
-                private_id: 4113762326,
+                private_id: None,
                 publishers: vec![],
                 jsep: Some(Jsep {
                     jsep_type: JsepType::Answer,
@@ -265,6 +264,7 @@ mod tests {
                 "data": {
                     "videoroom": "event",
                     "room": 8146468u64,
+                    "private_id": 4113762326u64,
                     "publishers": [
                         {
                             "id": 1337,
