@@ -28,8 +28,7 @@ RUN apk add --no-cache \
     ninja \
     gnutls-dev \
     gobject-introspection-dev \
-    gengetopt \
-    postgresql-dev
+    gengetopt
 
 # Build libnice from source
 RUN cd /tmp \
