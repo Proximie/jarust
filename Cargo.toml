@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.7.1"
+version = "1.7.2"
 authors = ["Hamza Jadid"]
 description = "A janus client SDK in Rust"
 readme = "README.md"
@@ -22,10 +22,10 @@ repository = "https://github.com/Proximie/jarust"
 
 [workspace.dependencies]
 # Workspace crates
-jarust_core = { version = "1.7.1", path = "jarust_core" }
-jarust_interface = { version = "1.7.1", path = "jarust_interface" }
-jarust_plugins = { version = "1.7.1", path = "jarust_plugins" }
-jarust_rt = { version = "1.7.1", path = "jarust_rt" }
+jarust_core = { version = "1.7.2", path = "jarust_core" }
+jarust_interface = { version = "1.7.2", path = "jarust_interface" }
+jarust_plugins = { version = "1.7.2", path = "jarust_plugins" }
+jarust_rt = { version = "1.7.2", path = "jarust_rt" }
 
 # 3rd Party
 async-trait = "0.1.87"

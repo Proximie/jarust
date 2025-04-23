@@ -181,7 +181,7 @@ make_dto!(
     LegacyVideoRoomKickParams,
     required {
         room: JanusId,
-        participant: JanusId
+        id: JanusId
     },
     optional {
         /// room secret, mandatory if configured
