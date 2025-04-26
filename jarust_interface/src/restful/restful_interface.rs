@@ -104,7 +104,7 @@ impl JanusInterface for RestfulInterface {
             ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
             ResponseType::Error { error } => {
                 let what = Error::JanusError {
-                    code: error.code,
+                    error: error.code.into(),
                     reason: error.reason,
                 };
                 tracing::error!("{what}");
@@ -134,7 +134,7 @@ impl JanusInterface for RestfulInterface {
         match response.janus {
             ResponseType::ServerInfo(info) => Ok(*info),
             ResponseType::Error { error } => Err(Error::JanusError {
-                code: error.code,
+                error: error.code.into(),
                 reason: error.reason,
             }),
             _ => Err(Error::IncompletePacket),
@@ -170,7 +170,7 @@ impl JanusInterface for RestfulInterface {
             ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
             ResponseType::Error { error } => {
                 let what = Error::JanusError {
-                    code: error.code,
+                    error: error.code.into(),
                     reason: error.reason,
                 };
                 tracing::error!("{what}");

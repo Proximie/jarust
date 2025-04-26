@@ -47,7 +47,10 @@ async fn it_websocket_core_tests() {
         assert!(
             matches!(
                 result,
-                Err(jarust::interface::error::Error::JanusError { code: _, reason: _ })
+                Err(jarust::interface::error::Error::JanusError {
+                    error: _,
+                    reason: _
+                })
             ),
             "No such session after destroying it"
         )

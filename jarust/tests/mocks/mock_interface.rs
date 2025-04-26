@@ -80,7 +80,7 @@ impl JanusInterface for MockInterface {
             ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
             ResponseType::Error { error } => {
                 let what = Error::JanusError {
-                    code: error.code,
+                    error: error.code.into(),
                     reason: error.reason,
                 };
                 tracing::error!("{what}");
@@ -117,7 +117,7 @@ impl JanusInterface for MockInterface {
             ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
             ResponseType::Error { error } => {
                 let what = Error::JanusError {
-                    code: error.code,
+                    error: error.code.into(),
                     reason: error.reason,
                 };
                 tracing::error!("{what}");
