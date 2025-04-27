@@ -18,7 +18,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 #[case::legacy_ws(TestingEnv::Legacy(JanusAPI::WebSocket))]
 #[case::legacy_restful(TestingEnv::Legacy(JanusAPI::Restful))]
 #[tokio::test]
-async fn videoroom_room_crud_e2e(#[case] testing_env: TestingEnv) {
+async fn legacy_videoroom_room_crud_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
     let handle = make_legacy_videoroom_attachment(testing_env).await.0;
     let room_id = JanusId::Uint(rand::random::<u64>().into());
