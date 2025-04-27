@@ -897,6 +897,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
         assert_eq!(participants.participants.contains(&bob), false);
     }
 
+    // kick_all is only available in janus multistream
     if testing_env.is_multistream() {
         'kick_all: {
             alice_handle
