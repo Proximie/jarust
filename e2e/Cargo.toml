@@ -19,7 +19,12 @@ tracing-subscriber.workspace = true
 
 [dependencies.jarust]
 path = "../jarust"
-features = ["audio-bridge-plugin", "echo-test-plugin", "video-room-plugin"]
+features = [
+    "audio-bridge-plugin",
+    "echo-test-plugin",
+    "video-room-plugin",
+    "legacy-video-room-plugin",
+]
 
 [dev-dependencies]
 rand.workspace = true
