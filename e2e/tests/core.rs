@@ -1,23 +1,31 @@
+#![allow(unused_labels)]
+
 use jarust::core::connect;
 use jarust::core::jaconfig::JaConfig;
 use jarust::core::jaconfig::JanusAPI;
 use jarust::core::prelude::Attach;
+use jarust::interface::error::Error::JanusError;
 use jarust::interface::japrotocol::GenericEvent;
 use jarust::interface::japrotocol::JaHandleEvent;
 use jarust::interface::japrotocol::ResponseType;
 use jarust::interface::tgenerator::RandomTransactionGenerator;
+use rstest::*;
 use std::time::Duration;
 
-#[allow(unused_labels)]
+#[rstest]
+#[case::multistream_ws("ws://localhost:8188/ws", JanusAPI::WebSocket)]
+#[case::multistream_restful("http://localhost:8088", JanusAPI::Restful)]
+#[case::legacy_ws("ws://localhost:9188/ws", JanusAPI::WebSocket)]
+#[case::legacy_restful("http://localhost:9088", JanusAPI::Restful)]
 #[tokio::test]
-async fn it_websocket_core_tests() {
+async fn core_test(#[case] url: &str, #[case] api: JanusAPI) {
     let config = JaConfig {
-        url: "ws://localhost:8188/ws".to_string(),
+        url: url.to_string(),
         apisecret: None,
         server_root: "janus".to_string(),
         capacity: 32,
     };
-    let mut connection = connect(config, JanusAPI::WebSocket, RandomTransactionGenerator)
+    let mut connection = connect(config, api, RandomTransactionGenerator)
         .await
         .unwrap();
 
@@ -45,10 +53,7 @@ async fn it_websocket_core_tests() {
             .attach("janus.plugin.echotest".to_string(), Duration::from_secs(5))
             .await;
         assert!(
-            matches!(
-                result,
-                Err(jarust::interface::error::Error::JanusError { code: _, reason: _ })
-            ),
+            matches!(result, Err(JanusError { code: _, reason: _ })),
             "No such session after destroying it"
         )
     }

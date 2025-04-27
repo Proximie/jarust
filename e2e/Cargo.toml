@@ -19,6 +19,7 @@ tracing-subscriber.workspace = true
 
 [dev-dependencies]
 rand.workspace = true
+rstest = "0.25.0"
 tokio = { workspace = true, features = ["time", "macros", "rt-multi-thread"] }
 tracing.workspace = true
 
