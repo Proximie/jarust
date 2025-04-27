@@ -29,7 +29,7 @@ impl TestingEnv {
 
     pub fn api(&self) -> JanusAPI {
         match self {
-            Self::Multistream(api) | Self::Legacy(api) => return *api,
+            Self::Multistream(api) | Self::Legacy(api) => *api,
         }
     }
 
