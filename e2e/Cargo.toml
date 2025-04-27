@@ -17,12 +17,12 @@ doctest = false
 [dependencies]
 tracing-subscriber.workspace = true
 
+[dependencies.jarust]
+path = "../jarust"
+features = ["audio-bridge-plugin", "echo-test-plugin", "video-room-plugin"]
+
 [dev-dependencies]
 rand.workspace = true
 rstest = "0.25.0"
 tokio = { workspace = true, features = ["time", "macros", "rt-multi-thread"] }
 tracing.workspace = true
-
-[dev-dependencies.jarust]
-path = "../jarust"
-features = ["audio-bridge-plugin", "echo-test-plugin", "video-room-plugin"]

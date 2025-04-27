@@ -1,5 +1,7 @@
+#![allow(unused_labels)]
+
+use e2e::ServerUrl;
 use jarust::core::jaconfig::JaConfig;
-use jarust::core::jaconfig::JanusAPI;
 use jarust::interface::tgenerator::RandomTransactionGenerator;
 use jarust::plugins::audio_bridge::common::AudioBridgeParticipant;
 use jarust::plugins::audio_bridge::events::AudioBridgeEvent;
@@ -20,16 +22,19 @@ use jarust::plugins::audio_bridge::params::AudioBridgeListParticipantsParams;
 use jarust::plugins::audio_bridge::params::AudioBridgeMuteParams;
 use jarust::plugins::audio_bridge::params::AudioBridgeMuteRoomParams;
 use jarust::plugins::JanusId;
+use rstest::*;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-// Allowing unused labels so we can use labels to have named blocks for test cases
-// I feel it's better than comments
-#[allow(unused_labels)]
+#[rstest]
+#[case::multistream_ws(ServerUrl::MultistreamWebsocket)]
+#[case::multistream_restful(ServerUrl::MultistreamRestful)]
+#[case::legacy_ws(ServerUrl::LegacyWebsocket)]
+#[case::legacy_restful(ServerUrl::LegacyRestful)]
 #[tokio::test]
-async fn room_crud_e2e() {
+async fn room_crud_e2e(#[case] server_url: ServerUrl) {
     let default_timeout = Duration::from_secs(4);
-    let handle = make_audiobridge_attachment().await.0;
+    let handle = make_audiobridge_attachment(server_url).await.0;
     let room_id = JanusId::Uint(rand::random::<u64>().into());
 
     'before_creation: {
@@ -160,15 +165,19 @@ async fn room_crud_e2e() {
     }
 }
 
-#[allow(unused_labels)]
+#[rstest]
+#[case::multistream_ws(ServerUrl::MultistreamWebsocket)]
+#[case::multistream_restful(ServerUrl::MultistreamRestful)]
+#[case::legacy_ws(ServerUrl::LegacyWebsocket)]
+#[case::legacy_restful(ServerUrl::LegacyRestful)]
 #[tokio::test]
-async fn participants_e2e() {
+async fn participants_e2e(#[case] server_url: ServerUrl) {
     let default_timeout = Duration::from_secs(4);
     let room_id = JanusId::Uint(rand::random::<u64>().into());
-    let admin = make_audiobridge_attachment().await.0;
-    let (alice_handle, mut alice_events) = make_audiobridge_attachment().await;
-    let (bob_handle, mut bob_events) = make_audiobridge_attachment().await;
-    let (eve_handle, mut eve_events) = make_audiobridge_attachment().await;
+    let admin = make_audiobridge_attachment(server_url).await.0;
+    let (alice_handle, mut alice_events) = make_audiobridge_attachment(server_url).await;
+    let (bob_handle, mut bob_events) = make_audiobridge_attachment(server_url).await;
+    let (eve_handle, mut eve_events) = make_audiobridge_attachment(server_url).await;
 
     admin
         .create_room(Some(room_id.clone()), default_timeout)
@@ -887,52 +896,56 @@ async fn participants_e2e() {
         assert_eq!(participants.participants.contains(&bob), false);
     }
 
-    'kick_all: {
-        alice_handle
-            .kick_all(AudioBridgeKickAllParams {
-                room: room_id.clone(),
-                secret: None,
-            })
-            .await
-            .expect("Failed to kick all participants");
-
-        // Alice should receive kicked all event
-        let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::KickedAll { room, kicked_all }) =
-            alice_events
-                .recv()
+    if server_url.is_multistream() {
+        'kick_all: {
+            alice_handle
+                .kick_all(AudioBridgeKickAllParams {
+                    room: room_id.clone(),
+                    secret: None,
+                })
                 .await
-                .expect("Alice failed to receive event")
-        else {
-            panic!("Alice received unexpected event")
-        };
+                .expect("Failed to kick all participants");
 
-        assert_eq!(room, room_id);
-        assert_eq!(kicked_all, alice.id);
+            // Alice should receive kicked all event
+            let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::KickedAll { room, kicked_all }) =
+                alice_events
+                    .recv()
+                    .await
+                    .expect("Alice failed to receive event")
+            else {
+                panic!("Alice received unexpected event")
+            };
 
-        // Eve should receive kicked all event
-        let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::KickedAll { room, kicked_all }) =
-            eve_events
-                .recv()
-                .await
-                .expect("Eve failed to receive event")
-        else {
-            panic!("Eve received unexpected event")
-        };
+            assert_eq!(room, room_id);
+            assert_eq!(kicked_all, alice.id);
 
-        assert_eq!(room, room_id);
-        assert_eq!(kicked_all, eve.id);
+            // Eve should receive kicked all event
+            let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::KickedAll { room, kicked_all }) =
+                eve_events
+                    .recv()
+                    .await
+                    .expect("Eve failed to receive event")
+            else {
+                panic!("Eve received unexpected event")
+            };
+
+            assert_eq!(room, room_id);
+            assert_eq!(kicked_all, eve.id);
+        }
     }
 }
 
-async fn make_audiobridge_attachment() -> (AudioBridgeHandle, UnboundedReceiver<PluginEvent>) {
+async fn make_audiobridge_attachment(
+    server_url: ServerUrl,
+) -> (AudioBridgeHandle, UnboundedReceiver<PluginEvent>) {
     let config = JaConfig {
-        url: "ws://localhost:8188/ws".to_string(),
+        url: server_url.url().to_string(),
         apisecret: None,
         server_root: "janus".to_string(),
         capacity: 32,
     };
     let mut connection =
-        jarust::core::connect(config, JanusAPI::WebSocket, RandomTransactionGenerator)
+        jarust::core::connect(config, server_url.api(), RandomTransactionGenerator)
             .await
             .expect("Failed to connect to server");
     let timeout = Duration::from_secs(10);
