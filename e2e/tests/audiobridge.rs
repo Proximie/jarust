@@ -1,7 +1,8 @@
 #![allow(unused_labels)]
 
-use e2e::ServerUrl;
+use e2e::TestingEnv;
 use jarust::core::jaconfig::JaConfig;
+use jarust::core::jaconfig::JanusAPI;
 use jarust::interface::tgenerator::RandomTransactionGenerator;
 use jarust::plugins::audio_bridge::common::AudioBridgeParticipant;
 use jarust::plugins::audio_bridge::events::AudioBridgeEvent;
@@ -27,14 +28,14 @@ use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 #[rstest]
-#[case::multistream_ws(ServerUrl::MultistreamWebsocket)]
-#[case::multistream_restful(ServerUrl::MultistreamRestful)]
-#[case::legacy_ws(ServerUrl::LegacyWebsocket)]
-#[case::legacy_restful(ServerUrl::LegacyRestful)]
+#[case::multistream_ws(TestingEnv::Multistream(JanusAPI::WebSocket))]
+#[case::multistream_restful(TestingEnv::Multistream(JanusAPI::Restful))]
+#[case::legacy_ws(TestingEnv::Legacy(JanusAPI::WebSocket))]
+#[case::legacy_restful(TestingEnv::Legacy(JanusAPI::Restful))]
 #[tokio::test]
-async fn room_crud_e2e(#[case] server_url: ServerUrl) {
+async fn audiobridge_room_crud_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
-    let handle = make_audiobridge_attachment(server_url).await.0;
+    let handle = make_audiobridge_attachment(testing_env).await.0;
     let room_id = JanusId::Uint(rand::random::<u64>().into());
 
     'before_creation: {
@@ -166,18 +167,18 @@ async fn room_crud_e2e(#[case] server_url: ServerUrl) {
 }
 
 #[rstest]
-#[case::multistream_ws(ServerUrl::MultistreamWebsocket)]
-#[case::multistream_restful(ServerUrl::MultistreamRestful)]
-#[case::legacy_ws(ServerUrl::LegacyWebsocket)]
-#[case::legacy_restful(ServerUrl::LegacyRestful)]
+#[case::multistream_ws(TestingEnv::Multistream(JanusAPI::WebSocket))]
+#[case::multistream_restful(TestingEnv::Multistream(JanusAPI::Restful))]
+#[case::legacy_ws(TestingEnv::Legacy(JanusAPI::WebSocket))]
+#[case::legacy_restful(TestingEnv::Legacy(JanusAPI::Restful))]
 #[tokio::test]
-async fn participants_e2e(#[case] server_url: ServerUrl) {
+async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
     let room_id = JanusId::Uint(rand::random::<u64>().into());
-    let admin = make_audiobridge_attachment(server_url).await.0;
-    let (alice_handle, mut alice_events) = make_audiobridge_attachment(server_url).await;
-    let (bob_handle, mut bob_events) = make_audiobridge_attachment(server_url).await;
-    let (eve_handle, mut eve_events) = make_audiobridge_attachment(server_url).await;
+    let admin = make_audiobridge_attachment(testing_env).await.0;
+    let (alice_handle, mut alice_events) = make_audiobridge_attachment(testing_env).await;
+    let (bob_handle, mut bob_events) = make_audiobridge_attachment(testing_env).await;
+    let (eve_handle, mut eve_events) = make_audiobridge_attachment(testing_env).await;
 
     admin
         .create_room(Some(room_id.clone()), default_timeout)
@@ -896,7 +897,7 @@ async fn participants_e2e(#[case] server_url: ServerUrl) {
         assert_eq!(participants.participants.contains(&bob), false);
     }
 
-    if server_url.is_multistream() {
+    if testing_env.is_multistream() {
         'kick_all: {
             alice_handle
                 .kick_all(AudioBridgeKickAllParams {
@@ -936,16 +937,16 @@ async fn participants_e2e(#[case] server_url: ServerUrl) {
 }
 
 async fn make_audiobridge_attachment(
-    server_url: ServerUrl,
+    testing_env: TestingEnv,
 ) -> (AudioBridgeHandle, UnboundedReceiver<PluginEvent>) {
     let config = JaConfig {
-        url: server_url.url().to_string(),
+        url: testing_env.url().to_string(),
         apisecret: None,
         server_root: "janus".to_string(),
         capacity: 32,
     };
     let mut connection =
-        jarust::core::connect(config, server_url.api(), RandomTransactionGenerator)
+        jarust::core::connect(config, testing_env.api(), RandomTransactionGenerator)
             .await
             .expect("Failed to connect to server");
     let timeout = Duration::from_secs(10);

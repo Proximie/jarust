@@ -12,38 +12,32 @@ pub fn init_tracing_subscriber() {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub enum ServerUrl {
-    MultistreamWebsocket,
-    MultistreamRestful,
-    LegacyWebsocket,
-    LegacyRestful,
+pub enum TestingEnv {
+    Multistream(JanusAPI),
+    Legacy(JanusAPI),
 }
 
-impl ServerUrl {
+impl TestingEnv {
     pub fn url(&self) -> &'static str {
         match self {
-            ServerUrl::MultistreamWebsocket => "ws://localhost:8188/ws",
-            ServerUrl::MultistreamRestful => "http://localhost:8088",
-            ServerUrl::LegacyWebsocket => "ws://localhost:9188/ws",
-            ServerUrl::LegacyRestful => "http://localhost:9088",
+            Self::Multistream(JanusAPI::WebSocket) => "ws://localhost:8188/ws",
+            Self::Multistream(JanusAPI::Restful) => "http://localhost:8088",
+            Self::Legacy(JanusAPI::WebSocket) => "ws://localhost:9188/ws",
+            Self::Legacy(JanusAPI::Restful) => "http://localhost:9088",
         }
     }
 
     pub fn api(&self) -> JanusAPI {
         match self {
-            ServerUrl::MultistreamWebsocket | ServerUrl::LegacyWebsocket => JanusAPI::WebSocket,
-            ServerUrl::MultistreamRestful | ServerUrl::LegacyRestful => JanusAPI::Restful,
+            Self::Multistream(api) | Self::Legacy(api) => return *api,
         }
     }
 
     pub fn is_legacy(&self) -> bool {
-        matches!(self, ServerUrl::LegacyWebsocket | ServerUrl::LegacyRestful)
+        matches!(self, Self::Legacy(_))
     }
 
     pub fn is_multistream(&self) -> bool {
-        matches!(
-            self,
-            ServerUrl::MultistreamWebsocket | ServerUrl::MultistreamRestful
-        )
+        matches!(self, Self::Multistream(_))
     }
 }
