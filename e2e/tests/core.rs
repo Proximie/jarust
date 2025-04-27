@@ -1,8 +1,9 @@
 #![allow(unused_labels)]
 
-use e2e::ServerUrl;
+use e2e::TestingEnv;
 use jarust::core::connect;
 use jarust::core::jaconfig::JaConfig;
+use jarust::core::jaconfig::JanusAPI;
 use jarust::core::prelude::Attach;
 use jarust::interface::error::Error::JanusError;
 use jarust::interface::japrotocol::GenericEvent;
@@ -13,19 +14,19 @@ use rstest::*;
 use std::time::Duration;
 
 #[rstest]
-#[case::multistream_ws(ServerUrl::MultistreamWebsocket)]
-#[case::multistream_restful(ServerUrl::MultistreamRestful)]
-#[case::legacy_ws(ServerUrl::LegacyWebsocket)]
-#[case::legacy_restful(ServerUrl::LegacyRestful)]
+#[case::multistream_ws(TestingEnv::Multistream(JanusAPI::WebSocket))]
+#[case::multistream_restful(TestingEnv::Multistream(JanusAPI::Restful))]
+#[case::legacy_ws(TestingEnv::Legacy(JanusAPI::WebSocket))]
+#[case::legacy_restful(TestingEnv::Legacy(JanusAPI::Restful))]
 #[tokio::test]
-async fn core_test(#[case] server_url: ServerUrl) {
+async fn core_test(#[case] testing_env: TestingEnv) {
     let config = JaConfig {
-        url: server_url.url().to_string(),
+        url: testing_env.url().to_string(),
         apisecret: None,
         server_root: "janus".to_string(),
         capacity: 32,
     };
-    let mut connection = connect(config, server_url.api(), RandomTransactionGenerator)
+    let mut connection = connect(config, testing_env.api(), RandomTransactionGenerator)
         .await
         .unwrap();
 

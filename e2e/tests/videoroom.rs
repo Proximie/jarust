@@ -1,3 +1,6 @@
+#![allow(unused_labels)]
+
+use e2e::TestingEnv;
 use jarust::core::jaconfig::JaConfig;
 use jarust::core::jaconfig::JanusAPI;
 use jarust::interface::tgenerator::RandomTransactionGenerator;
@@ -15,14 +18,17 @@ use jarust::plugins::video_room::params::VideoRoomPublisherJoinParams;
 use jarust::plugins::video_room::params::VideoRoomPublisherJoinParamsOptional;
 use jarust::plugins::video_room::responses::VideoRoomParticipant;
 use jarust::plugins::JanusId;
+use rstest::*;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-#[allow(unused_labels)]
+#[rstest]
+#[case::multistream_ws(TestingEnv::Multistream(JanusAPI::WebSocket))]
+#[case::multistream_restful(TestingEnv::Multistream(JanusAPI::Restful))]
 #[tokio::test]
-async fn room_crud_e2e() {
+async fn videoroom_room_crud_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
-    let handle = make_videoroom_attachment().await.0;
+    let handle = make_videoroom_attachment(testing_env).await.0;
     let room_id = JanusId::Uint(rand::random::<u64>().into());
 
     'before_creation: {
@@ -153,15 +159,17 @@ async fn room_crud_e2e() {
     }
 }
 
-#[allow(unused_labels)]
+#[rstest]
+#[case::multistream_ws(TestingEnv::Multistream(JanusAPI::WebSocket))]
+#[case::multistream_restful(TestingEnv::Multistream(JanusAPI::Restful))]
 #[tokio::test]
-async fn participants_e2e() {
+async fn videoroom_participants_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
     let room_id = JanusId::Uint(rand::random::<u64>().into());
-    let admin = make_videoroom_attachment().await.0;
-    let (alice_handle, mut alice_events) = make_videoroom_attachment().await;
-    let (bob_handle, mut bob_events) = make_videoroom_attachment().await;
-    let (eve_handle, mut eve_events) = make_videoroom_attachment().await;
+    let admin = make_videoroom_attachment(testing_env).await.0;
+    let (alice_handle, mut alice_events) = make_videoroom_attachment(testing_env).await;
+    let (bob_handle, mut bob_events) = make_videoroom_attachment(testing_env).await;
+    let (eve_handle, mut eve_events) = make_videoroom_attachment(testing_env).await;
 
     admin
         .create_room(Some(room_id.clone()), default_timeout)
@@ -309,15 +317,17 @@ async fn participants_e2e() {
     };
 }
 
-async fn make_videoroom_attachment() -> (VideoRoomHandle, UnboundedReceiver<PluginEvent>) {
+async fn make_videoroom_attachment(
+    testing_env: TestingEnv,
+) -> (VideoRoomHandle, UnboundedReceiver<PluginEvent>) {
     let config = JaConfig {
-        url: "ws://localhost:8188/ws".to_string(),
+        url: testing_env.url().to_string(),
         apisecret: None,
         server_root: "janus".to_string(),
         capacity: 32,
     };
     let mut connection =
-        jarust::core::connect(config, JanusAPI::WebSocket, RandomTransactionGenerator)
+        jarust::core::connect(config, testing_env.api(), RandomTransactionGenerator)
             .await
             .expect("Failed to connect to server");
     let timeout = Duration::from_secs(10);
