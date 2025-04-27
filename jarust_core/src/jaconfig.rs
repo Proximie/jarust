@@ -11,7 +11,7 @@ pub struct JaConfig {
     pub capacity: usize,
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum JanusAPI {
     WebSocket,
     Restful,
