@@ -26,7 +26,7 @@ serde.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "time", "rt"] }
 tracing.workspace = true
-uuid = { version = "1.11.0", features = ["fast-rng", "v4"] }
+uuid = { workspace = true, features = ["fast-rng", "v4"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 rustls = { version = "0.23.20", optional = true }
