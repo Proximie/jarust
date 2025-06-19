@@ -24,6 +24,8 @@ features = [
     "echo-test-plugin",
     "video-room-plugin",
     "legacy-video-room-plugin",
+    "streaming-plugin",
+    "__plugin-experimental",
 ]
 
 [dev-dependencies]
