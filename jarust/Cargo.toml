@@ -28,7 +28,7 @@ streaming-plugin = ["jarust_plugins/streaming"]
 video-room-plugin = ["jarust_plugins/video-room"]
 legacy-video-room-plugin = ["jarust_plugins/legacy-video-room"]
 ffi-compatible = ["jarust_plugins/ffi-compatible"]
-__plugin-expiremental = ["jarust_plugins/__experimental"]
+__plugin-experimental = ["jarust_plugins/__experimental"]
 
 # Interface
 use-native-tls = [
