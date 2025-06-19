@@ -16,5 +16,6 @@ services:
     volumes:
       - "./e2e/server_config/janus.jcfg:/usr/local/etc/janus/janus.jcfg"
       - "./e2e/server_config/janus.plugin.audiobridge.jcfg:/usr/local/etc/janus/janus.plugin.audiobridge.jcfg"
+      - "./e2e/server_config/janus.plugin.streaming.jcfg:/usr/local/etc/janus/janus.plugin.streaming.jcfg"
       - "./e2e/server_config/janus.plugin.videoroom.jcfg:/usr/local/etc/janus/janus.plugin.videoroom.jcfg"
     restart: always
