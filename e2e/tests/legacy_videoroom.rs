@@ -10,6 +10,8 @@ use jarust::plugins::legacy_video_room::jahandle_ext::LegacyVideoRoom;
 use jarust::plugins::legacy_video_room::params::LegacyVideoRoomCreateParams;
 use jarust::plugins::legacy_video_room::params::LegacyVideoRoomExistsParams;
 use jarust::plugins::JanusId;
+use jarust::plugins::common::U63;
+use rand::{thread_rng, Rng};
 use rstest::*;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -21,7 +23,8 @@ use tokio::sync::mpsc::UnboundedReceiver;
 async fn legacy_videoroom_room_crud_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
     let handle = make_legacy_videoroom_attachment(testing_env).await.0;
-    let room_id = JanusId::Uint(rand::random::<u64>().into());
+    let mut rng = thread_rng();
+    let room_id = JanusId::Uint(rng.gen_range(0..U63::MAX).try_into().unwrap());
 
     'before_creation: {
         let exists = handle

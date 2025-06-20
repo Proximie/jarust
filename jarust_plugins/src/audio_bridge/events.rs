@@ -269,8 +269,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomJoined {
-                id: JanusId::Uint(751378u64.into()),
-                room: JanusId::Uint(684657.into()),
+                id: JanusId::Uint(751378u64.try_into().unwrap()),
+                room: JanusId::Uint(684657u64.try_into().unwrap()),
                 participants: vec![],
             })
         );
@@ -303,8 +303,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomJoinedWithJsep {
-                id: JanusId::Uint(751378.into()),
-                room: JanusId::Uint(684657.into()),
+                id: JanusId::Uint(751378u64.try_into().unwrap()),
+                room: JanusId::Uint(684657u64.try_into().unwrap()),
                 participants: vec![],
                 jsep: Jsep {
                     jsep_type: JsepType::Answer,
@@ -337,8 +337,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomLeft {
-                id: JanusId::Uint(751378.into()),
-                room: JanusId::Uint(684657.into()),
+                id: JanusId::Uint(751378.try_into().unwrap()),
+                room: JanusId::Uint(684657.try_into().unwrap()),
             })
         );
     }
@@ -366,8 +366,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomChanged {
-                id: JanusId::Uint(38626.into()),
-                room: JanusId::Uint(61682.into()),
+                id: JanusId::Uint(38626.try_into().unwrap()),
+                room: JanusId::Uint(61682.try_into().unwrap()),
                 participants: vec![],
             })
         );
@@ -401,9 +401,9 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::ParticipantsUpdated {
-                room: JanusId::Uint(6613848040355181645.into()),
+                room: JanusId::Uint(6613848040355181645.try_into().unwrap()),
                 participants: vec![AudioBridgeParticipant {
-                    id: JanusId::Uint(4975437903264518u64.into()),
+                    id: JanusId::Uint(4975437903264518u64.try_into().unwrap()),
                     setup: false,
                     muted: false,
                     display: None,
@@ -437,7 +437,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomMuteUpdated {
-                room: JanusId::Uint(6613848040355181645.into()),
+                room: JanusId::Uint(6613848040355181645.try_into().unwrap()),
                 muted: true
             })
         );
@@ -465,8 +465,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::ParticipantKicked {
-                room: JanusId::Uint(6613848040355181645.into()),
-                kicked: JanusId::Uint(4975437903264518u64.into())
+                room: JanusId::Uint(6613848040355181645.try_into().unwrap()),
+                kicked: JanusId::Uint(4975437903264518u64.try_into().unwrap())
             })
         );
     }
@@ -493,8 +493,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::ParticipantLeft {
-                room: JanusId::Uint(6613848040355181645.into()),
-                leaving: JanusId::Uint(4975437903264518u64.into())
+                room: JanusId::Uint(6613848040355181645.try_into().unwrap()),
+                leaving: JanusId::Uint(4975437903264518u64.try_into().unwrap())
             })
         );
     }
@@ -521,8 +521,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::AudioBridgeEvent(AudioBridgeEvent::KickedAll {
-                room: JanusId::Uint(6613848040355181645.into()),
-                kicked_all: JanusId::Uint(4975437903264518u64.into())
+                room: JanusId::Uint(6613848040355181645.try_into().unwrap()),
+                kicked_all: JanusId::Uint(4975437903264518u64.try_into().unwrap())
             })
         );
     }

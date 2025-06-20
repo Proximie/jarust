@@ -442,7 +442,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomDestroyed {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
             })
         )
     }
@@ -469,7 +469,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::VideoRoomEvent(VideoRoomEvent::NewPublisher {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 publishers: vec![]
             })
         );
@@ -501,9 +501,9 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomJoined {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 description: Some("A brand new description!".to_string()),
-                id: JanusId::Uint(1337.into()),
+                id: JanusId::Uint(1337.try_into().unwrap()),
                 private_id: 4113762326,
                 publishers: vec![],
             })
@@ -539,9 +539,9 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::VideoRoomEvent(VideoRoomEvent::RoomJoinedWithJsep {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 description: Some("A brand new description!".to_string()),
-                id: JanusId::Uint(1337.into()),
+                id: JanusId::Uint(1337.try_into().unwrap()),
                 private_id: 4113762326,
                 publishers: vec![],
                 jsep: Jsep {
@@ -603,7 +603,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::VideoRoomEvent(VideoRoomEvent::Leaving {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 reason: "I'm out".to_string()
             })
         )
@@ -680,7 +680,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::VideoRoomEvent(VideoRoomEvent::ConfiguredWithJsep {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 audio_codec: Some("opus".to_string()),
                 video_codec: Some("h264".to_string()),
                 streams: Some(vec![

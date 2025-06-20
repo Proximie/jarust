@@ -44,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
             StreamingCreateParams {
                 mountpoint_type: StreamingMountpointType::RTP,
                 optional: StreamingCreateParamsOptional {
-                    id: Some(JanusId::Uint(1337.into())),
+                    id: Some(JanusId::Uint(1337.try_into().unwrap())),
                     name: Some(String::from("stream name")),
                     description: Some(String::from("stream description")),
                     media: Some(vec![StreamingRtpMedia {
@@ -72,7 +72,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Mountpoints {:#?}", mountpoints);
 
     let info = handle
-        .info(JanusId::Uint(1337.into()), None, timeout)
+        .info(JanusId::Uint(1337.try_into().unwrap()), None, timeout)
         .await?;
     tracing::info!("Info: {:#?}", info);
 

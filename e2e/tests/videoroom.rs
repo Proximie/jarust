@@ -18,6 +18,8 @@ use jarust::plugins::video_room::params::VideoRoomPublisherJoinParams;
 use jarust::plugins::video_room::params::VideoRoomPublisherJoinParamsOptional;
 use jarust::plugins::video_room::responses::VideoRoomParticipant;
 use jarust::plugins::JanusId;
+use jarust::plugins::common::U63;
+use rand::{thread_rng, Rng};
 use rstest::*;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -29,7 +31,8 @@ use tokio::sync::mpsc::UnboundedReceiver;
 async fn videoroom_room_crud_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
     let handle = make_videoroom_attachment(testing_env).await.0;
-    let room_id = JanusId::Uint(rand::random::<u64>().into());
+    let mut rng = thread_rng();
+    let room_id = JanusId::Uint(rng.gen_range(0..U63::MAX).try_into().unwrap());
 
     'before_creation: {
         let exists = handle
@@ -165,7 +168,8 @@ async fn videoroom_room_crud_e2e(#[case] testing_env: TestingEnv) {
 #[tokio::test]
 async fn videoroom_participants_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
-    let room_id = JanusId::Uint(rand::random::<u64>().into());
+    let mut rng = thread_rng();
+    let room_id = JanusId::Uint(rng.gen_range(0..U63::MAX).try_into().unwrap());
     let admin = make_videoroom_attachment(testing_env).await.0;
     let (alice_handle, mut alice_events) = make_videoroom_attachment(testing_env).await;
     let (bob_handle, mut bob_events) = make_videoroom_attachment(testing_env).await;

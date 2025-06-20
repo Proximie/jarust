@@ -116,7 +116,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::StreamingEvent(StreamingEvent::MountpointCreated {
-                id: JanusId::Uint(63807u64.into()),
+                id: JanusId::Uint(63807u64.try_into().unwrap()),
                 mountpoint_type: "live".to_string(),
             })
         );
@@ -143,7 +143,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::StreamingEvent(StreamingEvent::MountpointDestroyed {
-                id: JanusId::Uint(63807u64.into()),
+                id: JanusId::Uint(63807u64.try_into().unwrap()),
             })
         );
     }

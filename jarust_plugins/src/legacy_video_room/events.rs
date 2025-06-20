@@ -239,9 +239,9 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::RoomJoined {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 description: Some("A brand new description!".to_string()),
-                id: JanusId::Uint(1337.into()),
+                id: JanusId::Uint(1337.try_into().unwrap()),
                 private_id: None,
                 publishers: vec![],
                 jsep: Some(Jsep {
@@ -278,9 +278,9 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::RoomJoined {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 description: Some("A brand new description!".to_string()),
-                id: JanusId::Uint(1337.into()),
+                id: JanusId::Uint(1337.try_into().unwrap()),
                 private_id: Some(4113762326),
                 publishers: vec![],
                 jsep: None
@@ -317,9 +317,9 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::NewPublishers {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 publishers: vec![LegacyVideoRoomPublisher {
-                    id: JanusId::Uint(1337.into()),
+                    id: JanusId::Uint(1337.try_into().unwrap()),
                     display: Some("A brand new publisher".to_string()),
                     substream: Some(1)
                 }]
@@ -354,8 +354,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::SubscriberAttached {
-                room: JanusId::Uint(8146468.into()),
-                id: JanusId::Uint(1337.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
+                id: JanusId::Uint(1337.try_into().unwrap()),
                 display: Some("Test Display Name".to_string()),
                 jsep: Jsep {
                     jsep_type: JsepType::Offer,
@@ -415,7 +415,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Configured {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 jsep: Some(Jsep {
                     jsep_type: JsepType::Answer,
                     sdp: "test_configured_sdp".to_string(),
@@ -447,8 +447,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Unpublished {
-                room: JanusId::Uint(8146468.into()),
-                unpublished: JanusId::Uint(1337.into())
+                room: JanusId::Uint(8146468.try_into().unwrap()),
+                unpublished: JanusId::Uint(1337.try_into().unwrap())
             })
         );
     }
@@ -475,7 +475,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::SubscriberStarted {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 started: "ok".to_string()
             })
         );
@@ -504,7 +504,7 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Leaving {
-                room: JanusId::Uint(8146468.into()),
+                room: JanusId::Uint(8146468.try_into().unwrap()),
                 reason: "kicked".to_string()
             })
         );
@@ -532,8 +532,8 @@ mod tests {
         assert_eq!(
             event,
             PluginEvent::LegacyVideoRoomEvent(LegacyVideoRoomEvent::Kicked {
-                room: JanusId::Uint(8146468.into()),
-                participant: JanusId::Uint(1337.into())
+                room: JanusId::Uint(8146468.try_into().unwrap()),
+                participant: JanusId::Uint(1337.try_into().unwrap())
             })
         );
     }
