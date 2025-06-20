@@ -23,6 +23,8 @@ use jarust::plugins::audio_bridge::params::AudioBridgeListParticipantsParams;
 use jarust::plugins::audio_bridge::params::AudioBridgeMuteParams;
 use jarust::plugins::audio_bridge::params::AudioBridgeMuteRoomParams;
 use jarust::plugins::JanusId;
+use jarust::plugins::common::U63;
+use rand::{thread_rng, Rng};
 use rstest::*;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -36,7 +38,8 @@ use tokio::sync::mpsc::UnboundedReceiver;
 async fn audiobridge_room_crud_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
     let handle = make_audiobridge_attachment(testing_env).await.0;
-    let room_id = JanusId::Uint(rand::random::<u64>().into());
+    let mut rng = thread_rng();
+    let room_id = JanusId::Uint(rng.gen_range(0..U63::MAX).try_into().unwrap());
 
     'before_creation: {
         let exists = handle
@@ -174,7 +177,8 @@ async fn audiobridge_room_crud_e2e(#[case] testing_env: TestingEnv) {
 #[tokio::test]
 async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
-    let room_id = JanusId::Uint(rand::random::<u64>().into());
+    let mut rng = thread_rng();
+    let room_id = JanusId::Uint(rng.gen_range(0..U63::MAX).try_into().unwrap());
     let admin = make_audiobridge_attachment(testing_env).await.0;
     let (alice_handle, mut alice_events) = make_audiobridge_attachment(testing_env).await;
     let (bob_handle, mut bob_events) = make_audiobridge_attachment(testing_env).await;
@@ -845,7 +849,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
     };
 
     'change_room: {
-        let another_room_id = JanusId::Uint(rand::random::<u64>().into());
+        let another_room_id = JanusId::Uint(rng.gen_range(0..U63::MAX).try_into().unwrap());
         bob_handle
             .create_room(Some(another_room_id.clone()), default_timeout)
             .await

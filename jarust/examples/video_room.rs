@@ -136,7 +136,7 @@ async fn main() -> anyhow::Result<()> {
             VideoRoomPublisherJoinParams {
                 room: room_id.clone(),
                 optional: VideoRoomPublisherJoinParamsOptional {
-                    id: Some(JanusId::Uint(1337.into())),
+                    id: Some(JanusId::Uint(1337.try_into().unwrap())),
                     display: Some(String::from("Publisher name")),
                     token: None,
                 },
