@@ -18,7 +18,7 @@ pub enum JanusId {
 #[cfg(feature = "ffi-compatible")]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct U63 {
-    pub inner: u64,
+    inner: u64,
 }
 
 #[cfg(not(feature = "ffi-compatible"))]
@@ -63,29 +63,47 @@ impl U63 {
     }
 }
 
-impl From<u64> for U63 {
-    fn from(value: u64) -> Self {
-        Self::new(value)
+impl TryFrom<u64> for U63 {
+    type Error = &'static str;
+
+    #[cfg(feature = "ffi-compatible")]
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        if value > U63::MAX {
+            Err("U63 only accepts values lower than 2^63 - 1")
+        } else {
+            Ok(Self { inner : value })
+        }
+    }
+
+    #[cfg(not(feature = "ffi-compatible"))]
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        if value > U63::MAX {
+            Err("U63 only accepts values lower than 2^63 - 1")
+        } else {
+            Ok(Self(value))
+        }
+    }
+
+}
+
+impl From<U63> for u64 {
+    #[cfg(feature = "ffi-compatible")]
+    fn from(value: U63) -> Self {
+        value.inner
+    }
+
+    #[cfg(not(feature = "ffi-compatible"))]
+    fn from(value: U63) -> Self {
+        value.0
     }
 }
 
-#[cfg(feature = "ffi-compatible")]
 impl Serialize for U63 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        self.inner.serialize(serializer)
-    }
-}
-
-#[cfg(not(feature = "ffi-compatible"))]
-impl Serialize for U63 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.0.serialize(serializer)
+        u64::from(*self).serialize(serializer)
     }
 }
 
@@ -96,5 +114,17 @@ impl<'de> Deserialize<'de> for U63 {
     {
         let value = u64::deserialize(deserializer)?;
         Ok(U63::new(value))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::common::U63;
+
+    #[test]
+    fn test_u63_conversion_with_u64() {
+        assert_eq!(u64::from(U63::try_from(123_456u64).unwrap()), 123_456u64);
+        assert_eq!(u64::from(U63::try_from(U63::MAX).unwrap()), U63::MAX);
+        assert!(U63::try_from(U63::MAX + 1).is_err());
     }
 }

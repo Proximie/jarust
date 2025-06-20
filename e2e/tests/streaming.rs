@@ -6,10 +6,12 @@ use jarust::core::jaconfig::JanusAPI;
 use jarust::interface::Error;
 use jarust::interface::tgenerator::RandomTransactionGenerator;
 use jarust::plugins::JanusId;
+use jarust::plugins::common::U63;
 use jarust::plugins::streaming::events::PluginEvent;
 use jarust::plugins::streaming::handle::StreamingHandle;
 use jarust::plugins::streaming::params::*;
 use jarust::plugins::streaming::jahandle_ext::Streaming;
+use rand::{thread_rng, Rng};
 use rstest::*;
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -21,7 +23,8 @@ use tokio::sync::mpsc::UnboundedReceiver;
 async fn streaming_crud_e2e(#[case] testing_env: TestingEnv) {
     let default_timeout = Duration::from_secs(4);
     let handle = make_streaming_attachment(testing_env).await.0;
-    let stream_id = JanusId::Uint(rand::random::<u64>().into());
+    let mut rng = thread_rng();
+    let stream_id = JanusId::Uint(rng.gen_range(0..U63::MAX).try_into().unwrap());
 
     'before_creation: {
         let info_err = handle
