@@ -1,3 +1,5 @@
+#![allow(unused_labels)]
+
 use e2e::TestingEnv;
 use jarust::core::jaconfig::JaConfig;
 use jarust::core::jaconfig::JanusAPI;
