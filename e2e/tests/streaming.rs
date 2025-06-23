@@ -1,14 +1,14 @@
 use e2e::TestingEnv;
 use jarust::core::jaconfig::JaConfig;
 use jarust::core::jaconfig::JanusAPI;
-use jarust::interface::Error;
 use jarust::interface::tgenerator::RandomTransactionGenerator;
-use jarust::plugins::JanusId;
+use jarust::interface::Error;
 use jarust::plugins::common::U63;
 use jarust::plugins::streaming::events::PluginEvent;
 use jarust::plugins::streaming::handle::StreamingHandle;
-use jarust::plugins::streaming::params::*;
 use jarust::plugins::streaming::jahandle_ext::Streaming;
+use jarust::plugins::streaming::params::*;
+use jarust::plugins::JanusId;
 use rand::{thread_rng, Rng};
 use rstest::*;
 use std::time::Duration;
@@ -27,9 +27,9 @@ async fn streaming_crud_e2e(#[case] testing_env: TestingEnv) {
     'before_creation: {
         let info_err = handle
             .info(stream_id.clone(), None, default_timeout)
-        .await
-        .expect_err("Stream should not exist before creation; before_creation");
-        let Error::PluginResponseError{ error_code, error } = info_err else {
+            .await
+            .expect_err("Stream should not exist before creation; before_creation");
+        let Error::PluginResponseError { error_code, error } = info_err else {
             panic!("Unexpected non PluginResponseError");
         };
         assert_eq!(error_code, 455); // JANUS_ERROR_INVALID_JSON_OBJECT
@@ -70,8 +70,8 @@ async fn streaming_crud_e2e(#[case] testing_env: TestingEnv) {
 
         let info = handle
             .info(stream_id.clone(), None, default_timeout)
-        .await
-        .expect("Failed to check if mountpoint exists; creation");
+            .await
+            .expect("Failed to check if mountpoint exists; creation");
         assert_eq!(info.id, stream_id.clone());
 
         let mountpoints = handle
@@ -97,9 +97,9 @@ async fn streaming_crud_e2e(#[case] testing_env: TestingEnv) {
             .expect("Failed to destroy mountpoint; destroy");
         let info_err = handle
             .info(stream_id.clone(), None, default_timeout)
-        .await
-        .expect_err("Stream should not exist after destruction; destroy");
-        let Error::PluginResponseError{ error_code, error } = info_err else {
+            .await
+            .expect_err("Stream should not exist after destruction; destroy");
+        let Error::PluginResponseError { error_code, error } = info_err else {
             panic!("Unexpected non PluginResponseError");
         };
         assert_eq!(error_code, 455); // JANUS_ERROR_INVALID_JSON_OBJECT
