@@ -93,7 +93,7 @@ impl<'de> Deserialize<'de> for U63 {
         U63::try_from(value).map_err(|_| -> D::Error {
             de::Error::invalid_value(
                 de::Unexpected::Unsigned(value.into()),
-                &"expecting an u64 lower or equal to 9223372036854775807",
+                &"a value less than or equal to 9223372036854775807",
             )
         })
     }
@@ -118,6 +118,6 @@ mod tests {
             &[Token::U64(123_456u64)],
         );
         assert_tokens(&U63::try_from(U63::MAX).unwrap(), &[Token::U64(U63::MAX)]);
-        assert_de_tokens_error::<U63>(&[Token::U64(U63::MAX + 1)], "invalid value: integer `9223372036854775808`, expected expecting an u64 lower or equal to 9223372036854775807");
+        assert_de_tokens_error::<U63>(&[Token::U64(U63::MAX + 1)], "invalid value: integer `9223372036854775808`, expected a value less than or equal to 9223372036854775807");
     }
 }
