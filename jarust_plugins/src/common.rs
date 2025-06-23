@@ -18,7 +18,11 @@ pub enum JanusId {
 #[cfg(feature = "ffi-compatible")]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct U63 {
-    inner: u64,
+    // janus-mobile-sdk depends on public visibility of this field
+    // https://github.com/Proximie/janus-mobile-sdk/blob/master/rslib/src/plugins/common.rs
+    // Visiblity can be revisited later.
+    // Prefer using the From trait to convert U63 into a u64 value if possible.
+    pub inner: u64,
 }
 
 #[cfg(not(feature = "ffi-compatible"))]
