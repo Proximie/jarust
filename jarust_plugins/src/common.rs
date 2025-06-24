@@ -102,7 +102,6 @@ impl<'de> Deserialize<'de> for U63 {
 #[cfg(test)]
 mod tests {
     use super::U63;
-    use serde_test::{assert_de_tokens_error, assert_tokens, Token};
 
     #[test]
     fn test_u63_conversion_with_u64() {
@@ -113,11 +112,27 @@ mod tests {
 
     #[test]
     fn test_u63_serialization() {
-        assert_tokens(
-            &U63::try_from(123_456u64).unwrap(),
-            &[Token::U64(123_456u64)],
+        assert_eq!(
+            serde_json::to_string(&U63::try_from(123_456u64).unwrap()).unwrap(),
+            "123456"
         );
-        assert_tokens(&U63::try_from(U63::MAX).unwrap(), &[Token::U64(U63::MAX)]);
-        assert_de_tokens_error::<U63>(&[Token::U64(U63::MAX + 1)], "invalid value: integer `9223372036854775808`, expected a value less than or equal to 9223372036854775807");
+        assert_eq!(
+            serde_json::from_str::<U63>("123456").unwrap(),
+            U63::try_from(123_456u64).unwrap()
+        );
+
+        assert_eq!(
+            serde_json::to_string(&U63::try_from(U63::MAX).unwrap()).unwrap(),
+            "9223372036854775807"
+        );
+        assert_eq!(
+            serde_json::from_str::<U63>("9223372036854775807").unwrap(),
+            U63::try_from(U63::MAX).unwrap()
+        );
+
+        assert_eq!(
+            serde_json::from_str::<U63>("9223372036854775808").unwrap_err().to_string(),
+            "invalid value: integer `9223372036854775808`, expected a value less than or equal to 9223372036854775807"
+        );
     }
 }
