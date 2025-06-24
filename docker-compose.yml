@@ -13,8 +13,9 @@ services:
       - "10000-10200:10000-10200/udp"
     volumes:
       - "./server_config/janus.jcfg:/etc/janus/janus.jcfg"
-      - "./server_config/janus.plugin.audiobridge.jcfg:/etc/janus/janus.plugin.audiobridge.jcfg"
-      - "./server_config/janus.plugin.videoroom.jcfg:/etc/janus/janus.plugin.videoroom.jcfg"
+      - "./server_config/janus.plugin.audiobridge.jcfg:/opt/janus/etc/janus/janus.plugin.audiobridge.jcfg"
+      - "./server_config/janus.plugin.streaming.jcfg:/opt/janus/etc/janus/janus.plugin.streaming.jcfg"
+      - "./server_config/janus.plugin.videoroom.jcfg:/opt/janus/etc/janus/janus.plugin.videoroom.jcfg"
     restart: always
 
   janus-gateway-legacy:
@@ -31,6 +32,7 @@ services:
       - "11000-11200:10000-10200/udp"
     volumes:
       - "./server_config/janus.jcfg:/etc/janus/janus.jcfg"
-      - "./server_config/janus.plugin.audiobridge.jcfg:/etc/janus/janus.plugin.audiobridge.jcfg"
-      - "./server_config/janus.plugin.videoroom.jcfg:/etc/janus/janus.plugin.videoroom.jcfg"
+      - "./server_config/janus.plugin.audiobridge.jcfg:/opt/janus/etc/janus/janus.plugin.audiobridge.jcfg"
+      - "./server_config/janus.plugin.streaming.jcfg:/opt/janus/etc/janus/janus.plugin.streaming.jcfg"
+      - "./server_config/janus.plugin.videoroom.jcfg:/opt/janus/etc/janus/janus.plugin.videoroom.jcfg"
     restart: always
