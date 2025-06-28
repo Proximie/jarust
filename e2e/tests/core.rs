@@ -38,7 +38,7 @@ async fn core_test(#[case] testing_env: TestingEnv) {
         assert_eq!(
             info.server_name,
             "Jarust".to_string(),
-            "Server name should match the one in server_config/janus.cfg"
+            "Server name should match the one in server_config/janus.jcfg"
         );
     }
 

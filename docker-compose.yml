@@ -1,6 +1,7 @@
 services:
   janus-gateway-multistream:
     container_name: janus-multistream
+    restart: always
     build:
       context: .
       dockerfile: docker/janus_multistream.dockerfile
@@ -12,14 +13,14 @@ services:
       - "8889:8889"
       - "10000-10200:10000-10200/udp"
     volumes:
-      - "./server_config/janus.jcfg:/etc/janus/janus.jcfg"
+      - "./server_config/janus.jcfg:/opt/janus/etc/janus/janus.jcfg"
       - "./server_config/janus.plugin.audiobridge.jcfg:/opt/janus/etc/janus/janus.plugin.audiobridge.jcfg"
       - "./server_config/janus.plugin.streaming.jcfg:/opt/janus/etc/janus/janus.plugin.streaming.jcfg"
       - "./server_config/janus.plugin.videoroom.jcfg:/opt/janus/etc/janus/janus.plugin.videoroom.jcfg"
-    restart: always
 
   janus-gateway-legacy:
     container_name: janus-legacy
+    restart: always
     build:
       context: .
       dockerfile: docker/janus_legacy.dockerfile
@@ -31,8 +32,7 @@ services:
       - "9889:8889"
       - "11000-11200:10000-10200/udp"
     volumes:
-      - "./server_config/janus.jcfg:/etc/janus/janus.jcfg"
+      - "./server_config/janus.jcfg:/opt/janus/etc/janus/janus.jcfg"
       - "./server_config/janus.plugin.audiobridge.jcfg:/opt/janus/etc/janus/janus.plugin.audiobridge.jcfg"
       - "./server_config/janus.plugin.streaming.jcfg:/opt/janus/etc/janus/janus.plugin.streaming.jcfg"
       - "./server_config/janus.plugin.videoroom.jcfg:/opt/janus/etc/janus/janus.plugin.videoroom.jcfg"
-    restart: always
