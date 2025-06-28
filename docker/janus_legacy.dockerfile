@@ -1,6 +1,5 @@
 FROM alpine:3.18
 
-# Install build dependencies
 RUN apk add --no-cache \
     build-base \
     git \
@@ -52,14 +51,9 @@ RUN cd /opt \
     && make install \
     && make configs
 
-# Create config directory and copy default configs
-RUN mkdir -p /etc/janus \
-    && cp -r /opt/janus/etc/janus/* /etc/janus/
-
-# Expose ports
 EXPOSE 8088 8089 8889 8000
 EXPOSE 10000-10200/udp
 
 WORKDIR /opt/janus
 
-CMD ["/opt/janus/bin/janus", "--config=/etc/janus/janus.jcfg"]
+CMD ["/opt/janus/bin/janus"]
