@@ -234,7 +234,9 @@ make_dto!(
         /// minimum delay to enforce via the playout-delay RTP extension, in blocks of 10ms
         min_delay: u64,
         /// maximum delay to enforce via the playout-delay RTP extension, in blocks of 10ms
-        max_delay: u64
+        max_delay: u64,
+        /// video codec to prefer among the negotiated ones
+        videocodec: LegacyVideoRoomVideoCodec
     }
 );
 
