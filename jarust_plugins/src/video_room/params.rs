@@ -441,7 +441,9 @@ make_dto!(
         /// list of streams to configure
         streams: Vec<VideoRoomConfigurePublisherStream>,
         /// descriptions (names) for the published streams
-        descriptions: Vec<VideoRoomPublishDescriptionParams>
+        descriptions: Vec<VideoRoomPublishDescriptionParams>,
+        /// video codec to prefer among the negotiated ones
+        videocodec: VideoRoomVideoCodec
     }
 );
 
