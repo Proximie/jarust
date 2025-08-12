@@ -45,6 +45,8 @@ jobs:
 
       - name: Create git tag and push
         run: ./scripts/release_tag.sh "${{ github.event.inputs.version }}" "${{ secrets.MACHINE_USER_EMAIL }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
