@@ -13,7 +13,7 @@ fi
 
 echo "Updating Cargo.toml versions to $VERSION"
 
-sed -i '' 's/^version = ".*"/version = "'$VERSION'"/' Cargo.toml
-sed -i '' 's/\(jarust_[a-zA-Z_]*\) = { version = "[^"]*"/\1 = { version = "'$VERSION'"/g' Cargo.toml
+sed -i.bak 's/^version = ".*"/version = "'$VERSION'"/' Cargo.toml && rm Cargo.toml.bak
+sed -i.bak 's/\(jarust_[a-zA-Z_]*\) = { version = "[^"]*"/\1 = { version = "'$VERSION'"/g' Cargo.toml && rm Cargo.toml.bak
 
 echo "✓ Updated all Cargo.toml files to version $VERSION"
