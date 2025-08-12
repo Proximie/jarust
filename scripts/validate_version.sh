@@ -17,7 +17,7 @@ if [[ ! "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+LATEST_TAG=$(git tag --sort=-version:refname | head -n 1 2>/dev/null || echo "0.0.0")
 LATEST_VERSION=${LATEST_TAG#v}  # Remove 'v' prefix if present
 
 version_compare() {
