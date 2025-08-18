@@ -64,7 +64,7 @@ make_dto!(
         /// whether to record the room or not, default=false
         record: bool,
         /// folder where recordings should be stored, when enabled
-        record_dir: String,
+        rec_dir: String,
         /// whether recording can only be started/stopped if the secret is provided, or using the global enable_recording request, default=false
         lock_record: bool,
         /// whether the room should be saved in the config file, default=false
