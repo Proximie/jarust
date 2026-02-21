@@ -1,7 +1,3 @@
-use super::demuxer::Demuxer;
-use super::napmap::NapMap;
-use super::router::Router;
-use super::tmanager::TransactionManager;
 use super::websocket_client::WebSocketClient;
 use crate::handle_msg::HandleMessage;
 use crate::handle_msg::HandleMessageWithJsep;
@@ -13,6 +9,10 @@ use crate::japrotocol::ResponseType;
 use crate::japrotocol::ServerInfoRsp;
 use crate::tgenerator::GenerateTransaction;
 use crate::tgenerator::TransactionGenerator;
+use crate::websocket::demuxer::Demuxer;
+use crate::websocket::napmap::NapMap;
+use crate::websocket::router::Router;
+use crate::websocket::tmanager::TransactionManager;
 use crate::Error;
 use jarust_rt::JaTask;
 use serde_json::json;
@@ -32,20 +32,18 @@ struct Shared {
     rsp_map: Arc<NapMap<String, JaResponse>>,
 }
 
-#[derive(Debug)]
 struct Exclusive {
     router: Router,
     ws: WebSocketClient,
     transaction_manager: TransactionManager,
 }
 
-#[derive(Debug)]
 struct InnerWebSocketInterface {
     shared: Shared,
     exclusive: Mutex<Exclusive>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct WebSocketInterface {
     inner: Arc<InnerWebSocketInterface>,
 }
@@ -144,7 +142,7 @@ impl JanusInterface for WebSocketInterface {
         conn_params: ConnectionParams,
         transaction_generator: impl GenerateTransaction,
     ) -> Result<Self, Error> {
-        tracing::debug!("Creating WebSocket Interface");
+        tracing::debug!("Creating WebSocket WASM Interface");
         let router = Router::new(&conn_params.server_root);
         let mut websocket = WebSocketClient::new();
         let receiver = websocket.connect(&conn_params.url).await?;
@@ -434,7 +432,13 @@ impl JanusInterface for WebSocketInterface {
     }
 
     fn name(&self) -> Box<str> {
-        "WebSocket Interface".to_string().into_boxed_str()
+        "WebSocket WASM Interface".to_string().into_boxed_str()
+    }
+}
+
+impl std::fmt::Debug for WebSocketInterface {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WebSocketInterface").finish()
     }
 }
 
