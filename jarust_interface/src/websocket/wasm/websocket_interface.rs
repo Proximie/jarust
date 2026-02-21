@@ -70,7 +70,7 @@ impl WebSocketInterface {
         timeout: Duration,
     ) -> Result<JaResponse, Error> {
         tracing::trace!("Polling response");
-        match tokio::time::timeout(
+        match jarust_rt::timeout(
             timeout,
             self.inner.shared.rsp_map.get(transaction.to_string()),
         )
@@ -97,7 +97,7 @@ impl WebSocketInterface {
     #[tracing::instrument(level = tracing::Level::TRACE, skip(self, timeout))]
     async fn poll_ack(&self, transaction: &str, timeout: Duration) -> Result<JaResponse, Error> {
         tracing::trace!("Polling ack");
-        match tokio::time::timeout(
+        match jarust_rt::timeout(
             timeout,
             self.inner.shared.ack_map.get(transaction.to_string()),
         )

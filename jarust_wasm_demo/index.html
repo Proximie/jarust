@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jarust WASM Demo — Echo Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 { color: #7ec8e3; margin-bottom: 0.25rem; }
+    p.subtitle { color: #888; margin-top: 0; margin-bottom: 2rem; }
+    #log {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 1rem;
+      height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .log-info  { color: #7ec8e3; }
+    .log-warn  { color: #f0c060; }
+    .log-error { color: #e06060; }
+    .log-debug { color: #888; }
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1.5rem;
+      background: #7ec8e3;
+      color: #111;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 1rem;
+    }
+    button:disabled { background: #444; color: #888; cursor: default; }
+  </style>
+</head>
+<body>
+  <h1>jarust WASM Demo</h1>
+  <p class="subtitle">Echo Test plugin via <code>wss://janus.conf.meetecho.com/ws</code></p>
+  <div id="log"></div>
+  <button id="btn" onclick="start()">Connect &amp; Run</button>
+
+  <script type="module">
+    import init from './pkg/jarust_wasm_demo.js';
+
+    const logEl = document.getElementById('log');
+
+    function appendLog(cls, ...args) {
+      const line = document.createElement('div');
+      line.className = cls;
+      line.textContent = args.join(' ');
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Route console output to the on-page log
+    const _info  = console.info.bind(console);
+    const _warn  = console.warn.bind(console);
+    const _error = console.error.bind(console);
+    const _debug = console.debug.bind(console);
+    const _log   = console.log.bind(console);
+    console.info  = (...a) => { _info(...a);  appendLog('log-info',  ...a); };
+    console.warn  = (...a) => { _warn(...a);  appendLog('log-warn',  ...a); };
+    console.error = (...a) => { _error(...a); appendLog('log-error', ...a); };
+    console.debug = (...a) => { _debug(...a); appendLog('log-debug', ...a); };
+    console.log   = (...a) => { _log(...a);   appendLog('log-info',  ...a); };
+
+    window.start = async function() {
+      const btn = document.getElementById('btn');
+      btn.disabled = true;
+      btn.textContent = 'Running…';
+
+      // Clear log by removing all children
+      while (logEl.firstChild) {
+        logEl.removeChild(logEl.firstChild);
+      }
+
+      try {
+        // init() triggers `#[wasm_bindgen(start)]` which calls run()
+        await init();
+      } catch (e) {
+        appendLog('log-error', 'Error: ' + e);
+        btn.disabled = false;
+        btn.textContent = 'Retry';
+      }
+    };
+  </script>
+</body>
+</html>

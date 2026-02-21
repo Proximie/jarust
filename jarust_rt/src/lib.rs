@@ -18,6 +18,7 @@ pub mod jatask;
 
 use futures_util::Future;
 pub use jatask::JaTask;
+use std::time::Duration;
 
 /// Spawns a new task. The name field is for debugging purposes only.
 #[cfg(not(target_family = "wasm"))]
@@ -40,4 +41,48 @@ where
 {
     tracing::trace!("Spawning task");
     jatask::spawn(name, future)
+}
+
+/// Sleeps for the given duration. Uses `tokio::time::sleep` on native and
+/// `gloo_timers` on WASM (which does not support `std::time::Instant`).
+#[cfg(not(target_family = "wasm"))]
+pub async fn sleep(duration: Duration) {
+    tokio::time::sleep(duration).await;
+}
+
+/// Sleeps for the given duration. Uses `tokio::time::sleep` on native and
+/// `gloo_timers` on WASM (which does not support `std::time::Instant`).
+#[cfg(target_family = "wasm")]
+pub async fn sleep(duration: Duration) {
+    gloo_timers::future::sleep(duration).await;
+}
+
+/// Runs `future` with a deadline. Uses `tokio::time::timeout` on native and
+/// a `gloo_timers`-based race on WASM (which does not support `std::time::Instant`).
+#[cfg(not(target_family = "wasm"))]
+pub async fn timeout<F, T>(duration: Duration, future: F) -> Result<T, ()>
+where
+    F: Future<Output = T>,
+{
+    tokio::time::timeout(duration, future).await.map_err(|_| ())
+}
+
+/// Runs `future` with a deadline. Uses `tokio::time::timeout` on native and
+/// a `gloo_timers`-based race on WASM (which does not support `std::time::Instant`).
+#[cfg(target_family = "wasm")]
+pub async fn timeout<F, T>(duration: Duration, future: F) -> Result<T, ()>
+where
+    F: Future<Output = T>,
+{
+    use futures_util::future::Either;
+    use futures_util::pin_mut;
+
+    let timer = gloo_timers::future::sleep(duration);
+    pin_mut!(future);
+    pin_mut!(timer);
+
+    match futures_util::future::select(future, timer).await {
+        Either::Left((output, _)) => Ok(output),
+        Either::Right((_, _)) => Err(()),
+    }
 }
