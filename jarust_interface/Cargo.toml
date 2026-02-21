@@ -27,6 +27,7 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "time", "rt"] }
 tracing.workspace = true
 uuid = { workspace = true, features = ["fast-rng", "v4"] }
+tokio-tungstenite-wasm = "0.8.2"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 rustls = { version = "0.23.20", optional = true }

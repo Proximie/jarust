@@ -1,4 +1,4 @@
-use crate::websocket::connector;
+use super::connector;
 use crate::Error;
 use bytes::Bytes;
 use futures_util::stream::SplitSink;

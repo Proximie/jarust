@@ -9,6 +9,9 @@ pub enum Error {
     #[error("InvalidHeaderValue: {0}")]
     InvalidHeaderValue(#[from] tokio_tungstenite::tungstenite::http::header::InvalidHeaderValue),
 
+    #[error("WebSocket WASM error: {0}")]
+    WebSocketWasm(#[from] tokio_tungstenite_wasm::Error),
+
     #[error("Failed to parse json: {0}")]
     JsonParsingFailure(#[from] serde_json::Error),
     #[error("IO: {0}")]
