@@ -6,13 +6,13 @@
 ///
 /// The macro behaves differently depending on the number of required and optional fields:
 ///
-/// - A struct with a single required feild and a single optional field will keep the required and the optional at the top level struct
+/// - A struct with a single required field and a single optional field will keep the required and the optional at the top level struct
 /// - A struct with a single required field but multiple optional fields will keep the required at the top level
 ///   but will create a separate struct for the optional fields
-/// - A struct with multiple required fields and a single optional field will keep the required fileds and the optional
+/// - A struct with multiple required fields and a single optional field will keep the required fields and the optional
 ///   field at the top level
-/// - A struct with multiple required fields and multiple optional fields will create seperate struct for the required fields
-///   and a seperate struct for the optional fields
+/// - A struct with multiple required fields and multiple optional fields will create separate struct for the required fields
+///   and a separate struct for the optional fields
 ///
 /// ## Example
 ///
