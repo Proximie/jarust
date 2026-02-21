@@ -87,7 +87,26 @@ pub async fn connect(
     api_interface: JanusAPI,
     transaction_generator: impl GenerateTransaction,
 ) -> Result<JaConnection, jarust_interface::Error> {
-    todo!("WASM is not supported yet")
+    let conn_params = ConnectionParams {
+        url: jaconfig.url,
+        capacity: jaconfig.capacity,
+        apisecret: jaconfig.apisecret,
+        server_root: jaconfig.server_root,
+    };
+    match api_interface {
+        JanusAPI::WebSocket => {
+            custom_connect(
+                WebSocketInterface::make_interface(conn_params, transaction_generator).await?,
+            )
+            .await
+        }
+        JanusAPI::Restful => {
+            custom_connect(
+                RestfulInterface::make_interface(conn_params, transaction_generator).await?,
+            )
+            .await
+        }
+    }
 }
 
 /// Creates a new customized connection with janus servers.

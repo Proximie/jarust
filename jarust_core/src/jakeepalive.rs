@@ -1,6 +1,5 @@
 use jarust_interface::janus_interface::JanusInterfaceImpl;
 use std::time::Duration;
-use tokio::time;
 
 pub struct JaKeepAlive {
     interface: JanusInterfaceImpl,
@@ -24,9 +23,8 @@ impl JaKeepAlive {
             return Ok(());
         }
         let duration = Duration::from_secs(self.ka_interval.into());
-        let mut interval = time::interval(duration);
         loop {
-            interval.tick().await;
+            jarust_rt::sleep(duration).await;
             tracing::debug!("Sending keep-alive");
             match self.interface.keep_alive(self.session_id, duration).await {
                 Ok(_) => tracing::debug!("Keep-alive success"),
