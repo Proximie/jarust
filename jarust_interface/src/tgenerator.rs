@@ -4,13 +4,30 @@ use std::ops::Deref;
 /// GenerateTransaction can be provided to an interface for generating messages transactions.
 ///
 /// The more they're unique the better, especially when choosing with WebSockets interface as demultiplexing heavily relies on transaction ids.
+#[cfg(not(target_family = "wasm"))]
 pub trait GenerateTransaction: Send + Sync + 'static {
     fn generate_transaction(&self) -> String;
 }
 
+#[cfg(target_family = "wasm")]
+pub trait GenerateTransaction: 'static {
+    fn generate_transaction(&self) -> String;
+}
+
+#[cfg(not(target_family = "wasm"))]
 impl<F> GenerateTransaction for F
 where
     F: Fn() -> String + Send + Sync + 'static,
+{
+    fn generate_transaction(&self) -> String {
+        self()
+    }
+}
+
+#[cfg(target_family = "wasm")]
+impl<F> GenerateTransaction for F
+where
+    F: Fn() -> String + 'static,
 {
     fn generate_transaction(&self) -> String {
         self()

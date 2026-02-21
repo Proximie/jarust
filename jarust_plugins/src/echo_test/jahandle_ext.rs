@@ -5,7 +5,8 @@ use std::ops::Deref;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-#[async_trait::async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 pub trait EchoTest: Attach {
     type Event: TryFrom<JaResponse, Error = jarust_interface::Error> + Send + Sync + 'static;
     type Handle: From<JaHandle> + Deref<Target = JaHandle> + PluginTask;

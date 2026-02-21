@@ -14,6 +14,26 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
+#[cfg(not(target_family = "wasm"))]
+pub trait MaybeSend: Send {}
+#[cfg(not(target_family = "wasm"))]
+impl<T: Send> MaybeSend for T {}
+
+#[cfg(target_family = "wasm")]
+pub trait MaybeSend {}
+#[cfg(target_family = "wasm")]
+impl<T> MaybeSend for T {}
+
+#[cfg(not(target_family = "wasm"))]
+pub trait MaybeSync: Sync {}
+#[cfg(not(target_family = "wasm"))]
+impl<T: Sync> MaybeSync for T {}
+
+#[cfg(target_family = "wasm")]
+pub trait MaybeSync {}
+#[cfg(target_family = "wasm")]
+impl<T> MaybeSync for T {}
+
 pub struct ConnectionParams {
     /// The url of the janus server.
     pub url: String,
@@ -29,8 +49,9 @@ pub struct ConnectionParams {
 ///
 /// It acts as a contract to implement different interfaces supported by janus server,
 /// full docs: <https://janus.conf.meetecho.com/docs/rest.html>
-#[async_trait::async_trait]
-pub trait JanusInterface: Debug + Send + Sync + 'static {
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+pub trait JanusInterface: Debug + MaybeSend + MaybeSync + 'static {
     /// Constructs a new interface with the given connection parameters and transaction generator.
     async fn make_interface(
         conn_params: ConnectionParams,

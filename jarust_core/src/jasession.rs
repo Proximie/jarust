@@ -2,7 +2,6 @@ use crate::jahandle::JaHandle;
 use crate::jahandle::NewHandleParams;
 use crate::jakeepalive::JaKeepAlive;
 use crate::prelude::*;
-use async_trait::async_trait;
 use jarust_interface::janus_interface::JanusInterfaceImpl;
 use jarust_rt::JaTask;
 use std::sync::Arc;
@@ -92,7 +91,8 @@ impl JaSession {
     }
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 impl Attach for JaSession {
     /// Attach a plugin to the current session
     #[tracing::instrument(level = tracing::Level::DEBUG, skip_all, fields(session_id = self.inner.shared.id))]

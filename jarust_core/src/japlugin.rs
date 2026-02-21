@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use async_trait::async_trait;
 use jarust_rt::JaTask;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -9,7 +8,8 @@ pub trait PluginTask {
     fn cancel_task(&mut self);
 }
 
-#[async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 pub trait Attach {
     async fn attach(
         &self,

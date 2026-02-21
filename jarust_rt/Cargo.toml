@@ -15,8 +15,13 @@ doctest = false
 
 [dependencies]
 futures-util.workspace = true
-tokio = { workspace = true, features = ["rt"] }
 tracing.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tokio = { workspace = true, features = ["rt"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+wasm-bindgen-futures = "0.4"
 
 [features]
 default = ["tokio-rt"]
