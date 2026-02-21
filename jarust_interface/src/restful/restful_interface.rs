@@ -56,7 +56,8 @@ impl RestfulInterface {
     }
 }
 
-#[async_trait::async_trait]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 impl JanusInterface for RestfulInterface {
     #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
     async fn make_interface(
