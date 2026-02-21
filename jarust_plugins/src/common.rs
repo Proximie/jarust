@@ -92,7 +92,7 @@ impl<'de> Deserialize<'de> for U63 {
         let value = u64::deserialize(deserializer)?;
         U63::try_from(value).map_err(|_| -> D::Error {
             de::Error::invalid_value(
-                de::Unexpected::Unsigned(value.into()),
+                de::Unexpected::Unsigned(value),
                 &"a value less than or equal to 9223372036854775807",
             )
         })

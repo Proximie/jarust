@@ -313,12 +313,8 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
 
         assert_eq!(room, room_id, "Eve should join correct room");
         assert_eq!(participants.len(), 2, "Alice and Bob should be in room");
-        assert_eq!(
-            participants.contains(&alice),
-            true,
-            "Alice should be in room"
-        );
-        assert_eq!(participants.contains(&bob), true, "Bob should be in room");
+        assert!(participants.contains(&alice), "Alice should be in room");
+        assert!(participants.contains(&bob), "Bob should be in room");
 
         AudioBridgeParticipant {
             id,
@@ -390,13 +386,12 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             panic!("Alice received unexpected event")
         };
 
-        assert_eq!(
+        assert!(
             participants
                 .iter()
                 .find(|p| p.id == alice.id)
                 .expect("Alice not found")
-                .muted,
-            true
+                .muted
         );
 
         // Bob should receive the mute event of Alice
@@ -411,13 +406,12 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             panic!("Bob received unexpected event")
         };
 
-        assert_eq!(
+        assert!(
             participants
                 .iter()
                 .find(|p| p.id == alice.id)
                 .expect("Alice not found")
-                .muted,
-            true
+                .muted
         );
 
         // Eve should receive the mute event of Alice
@@ -432,13 +426,12 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             panic!("Eve received unexpected event")
         };
 
-        assert_eq!(
+        assert!(
             participants
                 .iter()
                 .find(|p| p.id == alice.id)
                 .expect("Alice not found")
-                .muted,
-            true
+                .muted
         );
     }
 
@@ -464,13 +457,12 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             panic!("Alice received unexpected event")
         };
 
-        assert_eq!(
-            participants
+        assert!(
+            !participants
                 .iter()
                 .find(|p| p.id == alice.id)
                 .expect("Alice not found")
-                .muted,
-            false
+                .muted
         );
 
         // Bob should receive the unmute event of Alice
@@ -485,13 +477,12 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             panic!("Bob received unexpected event")
         };
 
-        assert_eq!(
-            participants
+        assert!(
+            !participants
                 .iter()
                 .find(|p| p.id == alice.id)
                 .expect("Alice not found")
-                .muted,
-            false
+                .muted
         );
 
         // Eve should receive the unmute event of Alice
@@ -506,13 +497,12 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             panic!("Eve received unexpected event")
         };
 
-        assert_eq!(
-            participants
+        assert!(
+            !participants
                 .iter()
                 .find(|p| p.id == alice.id)
                 .expect("Alice not found")
-                .muted,
-            false
+                .muted
         );
     }
 
@@ -548,7 +538,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             .find(|p| p.id == eve.id)
             .expect("Eve not found");
 
-        assert_eq!(eve.muted, true);
+        assert!(eve.muted);
         assert_eq!(eve.display, Some(new_display.clone()));
 
         // Bob should receive the mute event of Eve
@@ -568,7 +558,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             .find(|p| p.id == eve.id)
             .expect("Eve not found");
 
-        assert_eq!(eve.muted, true);
+        assert!(eve.muted);
         assert_eq!(eve.display, Some(new_display.clone()));
 
         // Eve should not receive muted event, instead it receives `"result": "ok"`
@@ -601,7 +591,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
         else {
             panic!("Alice received unexpected event")
         };
-        assert_eq!(muted, true);
+        assert!(muted);
 
         // Bob should receive the mute event of all participants
         let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomMuteUpdated { muted, .. }) =
@@ -612,7 +602,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
         else {
             panic!("Bob received unexpected event")
         };
-        assert_eq!(muted, true);
+        assert!(muted);
 
         // Eve should receive the mute event of all participants
         let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomMuteUpdated { muted, .. }) =
@@ -623,7 +613,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
         else {
             panic!("Eve received unexpected event")
         };
-        assert_eq!(muted, true);
+        assert!(muted);
     }
 
     'unmute_room: {
@@ -644,7 +634,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
         else {
             panic!("Alice received unexpected event")
         };
-        assert_eq!(muted, false);
+        assert!(!muted);
 
         // Bob should receive the unmute event of all participants
         let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomMuteUpdated { muted, .. }) =
@@ -655,7 +645,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
         else {
             panic!("Bob received unexpected event")
         };
-        assert_eq!(muted, false);
+        assert!(!muted);
 
         // Eve should receive the unmute event of all participants
         let PluginEvent::AudioBridgeEvent(AudioBridgeEvent::RoomMuteUpdated { muted, .. }) =
@@ -666,7 +656,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
         else {
             panic!("Eve received unexpected event")
         };
-        assert_eq!(muted, false);
+        assert!(!muted);
     }
 
     'list_participants: {
@@ -682,15 +672,10 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             .participants;
 
         assert_eq!(participants.len(), 3);
-        assert_eq!(
-            participants.contains(&alice),
-            true,
-            "Alice should be in room"
-        );
-        assert_eq!(participants.contains(&bob), true, "Bob should be in room");
-        assert_eq!(
+        assert!(participants.contains(&alice), "Alice should be in room");
+        assert!(participants.contains(&bob), "Bob should be in room");
+        assert!(
             participants.iter().any(|p| p.id == eve.id),
-            true,
             "Eve should be in room"
         );
     }
@@ -798,7 +783,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             .await
             .expect("Failed to list participants");
         assert_eq!(participants.participants.len(), 2);
-        assert_eq!(participants.participants.contains(&bob), false);
+        assert!(!participants.participants.contains(&bob));
     }
 
     // Bob rejoins
@@ -898,7 +883,7 @@ async fn audiobridge_participants_e2e(#[case] testing_env: TestingEnv) {
             .await
             .expect("Failed to list participants");
         assert_eq!(participants.participants.len(), 2);
-        assert_eq!(participants.participants.contains(&bob), false);
+        assert!(!participants.participants.contains(&bob));
     }
 
     // kick_all is only available in janus multistream
