@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "e2e",
     "jarust_core",
@@ -28,17 +28,17 @@ jarust_plugins = { version = "1.8.2", path = "jarust_plugins" }
 jarust_rt = { version = "1.8.2", path = "jarust_rt" }
 
 # 3rd Party
-async-trait = "0.1.87"
-bytes = "1.10.0"
-futures-util = "0.3.31"
+async-trait = "0.1.89"
+bytes = "1.11.1"
+futures-util = "0.3.32"
 rand = "0.8.5"
-serde = { version = "1.0.218", features = ["derive"] }
-serde_json = "1.0.140"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
 thiserror = "1.0.69"
-tokio = "1.46.1"
-tracing = "0.1.41"
-uuid = "1.17.0"
+tokio = "1.49.0"
+tracing = "0.1.44"
+uuid = "1.21.0"
 
 # Dev deps
-anyhow = "1.0.98"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+anyhow = "1.0.102"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }

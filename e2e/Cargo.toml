@@ -30,6 +30,6 @@ features = [
 
 [dev-dependencies]
 rand.workspace = true
-rstest = "0.25.0"
+rstest = "0.26.1"
 tokio = { workspace = true, features = ["time", "macros", "rt-multi-thread"] }
 tracing.workspace = true
