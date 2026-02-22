@@ -45,26 +45,8 @@ where
 
 /// Sleeps for the given duration. Uses `tokio::time::sleep` on native and
 /// `gloo_timers` on WASM (which does not support `std::time::Instant`).
-#[cfg(not(target_family = "wasm"))]
 pub async fn sleep(duration: Duration) {
-    tokio::time::sleep(duration).await;
-}
-
-/// Sleeps for the given duration. Uses `tokio::time::sleep` on native and
-/// `gloo_timers` on WASM (which does not support `std::time::Instant`).
-#[cfg(target_family = "wasm")]
-pub async fn sleep(duration: Duration) {
-    gloo_timers::future::sleep(duration).await;
-}
-
-/// Runs `future` with a deadline. Uses `tokio::time::timeout` on native and
-/// a `gloo_timers`-based race on WASM (which does not support `std::time::Instant`).
-#[cfg(not(target_family = "wasm"))]
-pub async fn timeout<F, T>(duration: Duration, future: F) -> Result<T, ()>
-where
-    F: Future<Output = T>,
-{
-    tokio::time::timeout(duration, future).await.map_err(|_| ())
+    jatask::sleep(duration).await;
 }
 
 /// Runs `future` with a deadline. Uses `tokio::time::timeout` on native and

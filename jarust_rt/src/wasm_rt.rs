@@ -1,5 +1,10 @@
 use futures_util::Future;
 use futures_util::FutureExt;
+use std::time::Duration;
+
+pub async fn sleep(duration: Duration) {
+    gloo_timers::future::sleep(duration).await;
+}
 
 pub fn spawn<F>(name: &str, future: F) -> JaTask
 where
