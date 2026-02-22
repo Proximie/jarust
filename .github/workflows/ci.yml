@@ -6,13 +6,40 @@ on:
 
 jobs:
   clippy:
-    name: Clippy check
+    name: Clippy check (${{ matrix.target }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            args: ""
+          - target: wasm32-unknown-unknown
+            args: "--target wasm32-unknown-unknown"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo clippy-all
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo clippy-all ${{ matrix.args }}
+
+  check-build:
+    name: Check build (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            args: ""
+          - target: wasm32-unknown-unknown
+            args: "--target wasm32-unknown-unknown"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo check ${{ matrix.args }}
 
   test:
     name: Integration test
