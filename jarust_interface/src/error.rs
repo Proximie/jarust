@@ -5,12 +5,13 @@ pub enum Error {
     #[error("WebSocket error: {0}")]
     WebSocket(#[from] tokio_tungstenite::tungstenite::Error),
 
+    #[cfg(target_family = "wasm")]
+    #[error("WebSocket error: {0}")]
+    WebSocket(#[from] tokio_tungstenite_wasm::Error),
+
     #[cfg(not(target_family = "wasm"))]
     #[error("InvalidHeaderValue: {0}")]
     InvalidHeaderValue(#[from] tokio_tungstenite::tungstenite::http::header::InvalidHeaderValue),
-
-    #[error("WebSocket WASM error: {0}")]
-    WebSocketWasm(#[from] tokio_tungstenite_wasm::Error),
 
     #[error("Failed to parse json: {0}")]
     JsonParsingFailure(#[from] serde_json::Error),
