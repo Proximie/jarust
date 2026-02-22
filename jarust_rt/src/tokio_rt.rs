@@ -1,5 +1,10 @@
 use futures_util::Future;
+use std::time::Duration;
 use tokio::task::AbortHandle;
+
+pub async fn sleep(duration: Duration) {
+    tokio::time::sleep(duration).await;
+}
 
 pub fn spawn<F>(name: &str, future: F) -> JaTask
 where
