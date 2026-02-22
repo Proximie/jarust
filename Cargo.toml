@@ -7,7 +7,6 @@ members = [
     "jarust_plugins",
     "jarust_rt",
     "jarust",
-    "jarust_wasm_demo",
 ]
 
 [workspace.package]
