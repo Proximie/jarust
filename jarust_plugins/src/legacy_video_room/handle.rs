@@ -71,7 +71,10 @@ impl LegacyVideoRoomHandle {
         let mut message: Value = params.try_into()?;
         message["request"] = "kick".into();
 
-        self.handle.send_waiton_rsp::<()>(message, timeout).await
+        self.handle
+            .send_waiton_rsp::<Value>(message, timeout)
+            .await?;
+        Ok(())
     }
 }
 
