@@ -1,8 +1,8 @@
 use super::websocket_client::WebSocketClient;
-use crate::websocket::demuxer::Demuxer;
-use crate::websocket::napmap::NapMap;
-use crate::websocket::router::Router;
-use crate::websocket::tmanager::TransactionManager;
+use crate::transport::demuxer::Demuxer;
+use crate::transport::napmap::NapMap;
+use crate::transport::router::Router;
+use crate::transport::tmanager::TransactionManager;
 use crate::handle_msg::HandleMessage;
 use crate::handle_msg::HandleMessageWithJsep;
 use crate::janus_interface::ConnectionParams;
