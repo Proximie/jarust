@@ -43,6 +43,9 @@ impl SocketIoClient {
         let (open_tx, open_rx) = oneshot::channel::<()>();
         let open_tx = Arc::new(Mutex::new(Some(open_tx)));
 
+        let (fail_tx, fail_rx) = oneshot::channel::<()>();
+        let fail_tx = Arc::new(Mutex::new(Some(fail_tx)));
+
         let socket = ClientBuilder::new(&url)
             .on(JANUS_EVENT, move |payload, _client| {
                 let tx = tx.clone();
@@ -63,17 +66,47 @@ impl SocketIoClient {
                 }
                 .boxed()
             })
-            .on("error", |payload, _client| {
+            .on("error", {
+                let fail_tx = fail_tx.clone();
+                move |payload, _client| {
+                    let fail_tx = fail_tx.clone();
+                    async move {
+                        tracing::error!("Socket.IO error event: {payload:?}");
+                        if let Ok(mut guard) = fail_tx.lock() {
+                            if let Some(tx) = guard.take() {
+                                let _ = tx.send(());
+                            }
+                        }
+                    }
+                    .boxed()
+                }
+            })
+            .on("close", move |_payload, _client| {
+                let fail_tx = fail_tx.clone();
                 async move {
-                    tracing::error!("Socket.IO error event: {payload:?}");
+                    tracing::warn!("Socket.IO connection closed");
+                    if let Ok(mut guard) = fail_tx.lock() {
+                        if let Some(tx) = guard.take() {
+                            let _ = tx.send(());
+                        }
+                    }
                 }
                 .boxed()
             })
             .connect()
             .await?;
 
-        if open_rx.await.is_err() {
-            tracing::warn!("Socket.IO connection closed before the `open` event fired");
+        match futures_util::future::select(open_rx, fail_rx).await {
+            futures_util::future::Either::Left((result, _)) => {
+                if result.is_err() {
+                    tracing::warn!("Socket.IO `open` channel closed before the event fired");
+                    return Err(Error::RequestTimeout);
+                }
+            }
+            futures_util::future::Either::Right((_, _)) => {
+                tracing::error!("Socket.IO connection failed before the `open` event fired");
+                return Err(Error::RequestTimeout);
+            }
         }
 
         self.socket = Some(socket);
