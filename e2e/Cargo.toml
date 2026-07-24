@@ -28,6 +28,9 @@ features = [
     "__plugin-experimental",
 ]
 
+[features]
+socketio = ["jarust/socketio"]
+
 [dev-dependencies]
 rand.workspace = true
 rstest = "0.26.1"
