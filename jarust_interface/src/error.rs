@@ -13,6 +13,10 @@ pub enum Error {
     #[error("InvalidHeaderValue: {0}")]
     InvalidHeaderValue(#[from] tokio_tungstenite::tungstenite::http::header::InvalidHeaderValue),
 
+    #[cfg(not(target_family = "wasm"))]
+    #[error("Socket.IO error: {0}")]
+    SocketIo(#[from] rust_socketio::Error),
+
     #[error("Failed to parse json: {0}")]
     JsonParsingFailure(#[from] serde_json::Error),
     #[error("IO: {0}")]

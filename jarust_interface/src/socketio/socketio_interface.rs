@@ -1,4 +1,4 @@
-use super::websocket_client::WebSocketClient;
+use super::socketio_client::SocketIoClient;
 use crate::handle_msg::HandleMessage;
 use crate::handle_msg::HandleMessageWithJsep;
 use crate::janus_interface::ConnectionParams;
@@ -32,23 +32,25 @@ struct Shared {
     rsp_map: Arc<NapMap<String, JaResponse>>,
 }
 
+#[derive(Debug)]
 struct Exclusive {
     router: Router,
-    ws: WebSocketClient,
+    socket: SocketIoClient,
     transaction_manager: TransactionManager,
 }
 
-struct InnerWebSocketInterface {
+#[derive(Debug)]
+struct InnerSocketIoInterface {
     shared: Shared,
     exclusive: Mutex<Exclusive>,
 }
 
-#[derive(Clone)]
-pub struct WebSocketInterface {
-    inner: Arc<InnerWebSocketInterface>,
+#[derive(Debug, Clone)]
+pub struct SocketIoInterface {
+    inner: Arc<InnerSocketIoInterface>,
 }
 
-impl WebSocketInterface {
+impl SocketIoInterface {
     #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
     pub async fn send(&self, message: Value) -> Result<String, Error> {
         let (message, transaction) = self.decorate_request(message);
@@ -56,9 +58,12 @@ impl WebSocketInterface {
         let path =
             Router::path_from_request(&message).unwrap_or(self.inner.shared.server_root.clone());
 
-        let mut guard = self.inner.exclusive.lock().await;
+        let guard = self.inner.exclusive.lock().await;
         guard.transaction_manager.insert(&transaction, &path).await;
-        guard.ws.send(message.to_string().as_bytes(), &path).await?;
+        guard
+            .socket
+            .send(message.to_string().as_bytes(), &path)
+            .await?;
         tracing::trace!("Sending {message:#?}");
         Ok(transaction)
     }
@@ -70,7 +75,7 @@ impl WebSocketInterface {
         timeout: Duration,
     ) -> Result<JaResponse, Error> {
         tracing::trace!("Polling response");
-        match jarust_rt::timeout(
+        match tokio::time::timeout(
             timeout,
             self.inner.shared.rsp_map.get(transaction.to_string()),
         )
@@ -97,7 +102,7 @@ impl WebSocketInterface {
     #[tracing::instrument(level = tracing::Level::TRACE, skip(self, timeout))]
     async fn poll_ack(&self, transaction: &str, timeout: Duration) -> Result<JaResponse, Error> {
         tracing::trace!("Polling ack");
-        match jarust_rt::timeout(
+        match tokio::time::timeout(
             timeout,
             self.inner.shared.ack_map.get(transaction.to_string()),
         )
@@ -135,18 +140,17 @@ impl WebSocketInterface {
     }
 }
 
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-impl JanusInterface for WebSocketInterface {
+#[async_trait::async_trait]
+impl JanusInterface for SocketIoInterface {
     #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
     async fn make_interface(
         conn_params: ConnectionParams,
         transaction_generator: impl GenerateTransaction,
     ) -> Result<Self, Error> {
-        tracing::debug!("Creating WebSocket WASM Interface");
+        tracing::debug!("Creating Socket.IO Interface");
         let router = Router::new(&conn_params.server_root);
-        let mut websocket = WebSocketClient::new();
-        let receiver = websocket.connect(&conn_params.url).await?;
+        let mut socket = SocketIoClient::new();
+        let receiver = socket.connect(&conn_params.url).await?;
         let transaction_manager = TransactionManager::new(conn_params.capacity);
         let transaction_generator = TransactionGenerator::new(transaction_generator);
 
@@ -201,10 +205,10 @@ impl JanusInterface for WebSocketInterface {
         };
         let exclusive = Exclusive {
             router,
-            ws: websocket,
+            socket,
             transaction_manager,
         };
-        let inner = InnerWebSocketInterface {
+        let inner = InnerSocketIoInterface {
             shared,
             exclusive: Mutex::new(exclusive),
         };
@@ -433,17 +437,11 @@ impl JanusInterface for WebSocketInterface {
     }
 
     fn name(&self) -> Box<str> {
-        "WebSocket WASM Interface".to_string().into_boxed_str()
+        "Socket.IO Interface".to_string().into_boxed_str()
     }
 }
 
-impl std::fmt::Debug for WebSocketInterface {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WebSocketInterface").finish()
-    }
-}
-
-impl Drop for InnerWebSocketInterface {
+impl Drop for InnerSocketIoInterface {
     fn drop(&mut self) {
         self.shared.tasks.iter().for_each(|task| {
             task.cancel();
