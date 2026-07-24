@@ -36,13 +36,14 @@ impl SocketIoClient {
 
     #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
     pub async fn connect(&mut self, url: &str) -> Result<mpsc::UnboundedReceiver<Bytes>, Error> {
+        let url = normalize_scheme(url);
         tracing::debug!("Connecting to {url}");
         let (tx, rx) = mpsc::unbounded_channel::<Bytes>();
 
         let (open_tx, open_rx) = oneshot::channel::<()>();
         let open_tx = Arc::new(Mutex::new(Some(open_tx)));
 
-        let socket = ClientBuilder::new(url)
+        let socket = ClientBuilder::new(&url)
             .on(JANUS_EVENT, move |payload, _client| {
                 let tx = tx.clone();
                 async move {
@@ -91,6 +92,16 @@ impl SocketIoClient {
     }
 }
 
+fn normalize_scheme(url: &str) -> String {
+    if let Some(rest) = url.strip_prefix("wss://") {
+        format!("https://{rest}")
+    } else if let Some(rest) = url.strip_prefix("ws://") {
+        format!("http://{rest}")
+    } else {
+        url.to_string()
+    }
+}
+
 fn forward_payload(payload: Payload, tx: &mpsc::UnboundedSender<Bytes>) {
     match payload {
         Payload::Text(values) => {
@@ -123,5 +134,34 @@ fn forward_json(value: serde_json::Value, tx: &mpsc::UnboundedSender<Bytes>) {
         other => {
             tracing::trace!("Ignoring non-Janus payload element: {other}");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_scheme;
+
+    #[test]
+    fn maps_websocket_schemes_to_http() {
+        assert_eq!(
+            normalize_scheme("wss://example.com/janus"),
+            "https://example.com/janus"
+        );
+        assert_eq!(
+            normalize_scheme("ws://example.com/janus"),
+            "http://example.com/janus"
+        );
+    }
+
+    #[test]
+    fn leaves_http_schemes_untouched() {
+        assert_eq!(
+            normalize_scheme("https://example.com/janus"),
+            "https://example.com/janus"
+        );
+        assert_eq!(
+            normalize_scheme("http://example.com/janus"),
+            "http://example.com/janus"
+        );
     }
 }
