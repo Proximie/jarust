@@ -13,7 +13,7 @@ pub mod handle_msg;
 pub mod janus_interface;
 pub mod japrotocol;
 pub mod restful;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(all(not(target_family = "wasm"), feature = "socketio"))]
 pub mod socketio;
 pub mod tgenerator;
 pub mod websocket;

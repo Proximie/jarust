@@ -49,6 +49,9 @@ tokio-rt = [
     "jarust_plugins/tokio-rt",
 ]
 
+# Transports
+socketio = ["jarust_core/socketio", "jarust_interface/socketio"]
+
 [dev-dependencies]
 anyhow.workspace = true
 async-trait.workspace = true
@@ -69,3 +72,7 @@ features = [
     "video-room",
     "legacy-video-room",
 ]
+
+[[example]]
+name = "socketio"
+required-features = ["socketio", "echo-test-plugin"]

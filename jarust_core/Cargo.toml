@@ -27,6 +27,7 @@ default = ["use-native-tls", "tokio-rt"]
 tokio-rt = ["jarust_rt/tokio-rt", "jarust_interface/tokio-rt"]
 use-native-tls = ["jarust_interface/use-native-tls"]
 use-rustls = ["jarust_interface/use-rustls"]
+socketio = ["jarust_interface/socketio"]
 
 [dev-dependencies]
 anyhow.workspace = true

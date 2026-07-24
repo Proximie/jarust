@@ -28,7 +28,7 @@ tokio = { workspace = true, features = ["sync", "time", "rt"] }
 tracing.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-rust_socketio = { version = "0.6.0", features = ["async"] }
+rust_socketio = { version = "0.6.0", features = ["async"], optional = true }
 rustls = { version = "0.23.20", optional = true }
 rustls-native-certs = { version = "0.8.1", optional = true }
 tokio-tungstenite = "0.28.0"
@@ -44,6 +44,7 @@ default = ["use-native-tls", "tokio-rt"]
 use-native-tls = ["tokio-tungstenite/native-tls"]
 use-rustls = ["rustls", "rustls-native-certs", "tokio-tungstenite/__rustls-tls"]
 tokio-rt = ["jarust_rt/tokio-rt"]
+socketio = ["dep:rust_socketio"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros"] }
