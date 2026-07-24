@@ -24,6 +24,9 @@ impl TestingEnv {
             Self::Multistream(JanusAPI::Restful) => "http://localhost:8088",
             Self::Legacy(JanusAPI::WebSocket) => "ws://localhost:9188/ws",
             Self::Legacy(JanusAPI::Restful) => "http://localhost:9088",
+            Self::Multistream(JanusAPI::SocketIo) | Self::Legacy(JanusAPI::SocketIo) => {
+                unimplemented!("Socket.IO transport is not covered by the e2e suite")
+            }
         }
     }
 

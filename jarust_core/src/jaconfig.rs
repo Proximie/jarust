@@ -15,4 +15,6 @@ pub struct JaConfig {
 pub enum JanusAPI {
     WebSocket,
     Restful,
+    #[cfg(not(target_family = "wasm"))]
+    SocketIo,
 }
