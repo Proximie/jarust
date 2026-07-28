@@ -65,17 +65,26 @@ where
             .clone();
         drop(notifiers);
 
-        // Re-check after registering the notifier: an `insert` could have landed (and
-        // fired `notify_waiters`) between the initial `contains_key` check above and
-        // registering the notifier here. Without this check that notification would be
-        // lost and the waiter would block forever.
+        // Build the `Notified` future and register it as a waiter *before* re-checking
+        // the map. `Notify::notify_waiters` wakes only the waiters registered at the
+        // instant it is called and buffers no permit, so any window in which we are not
+        // yet registered would drop the wakeup. `enable()` registers interest eagerly:
+        // once it has been called, an `insert` racing between here and the `.await`
+        // below is guaranteed to wake this future.
+        let notified = notify.notified();
+        tokio::pin!(notified);
+        notified.as_mut().enable();
+
+        // Re-check after registering: an `insert` may have landed between the initial
+        // `contains_key` check above and registering interest here, in which case no
+        // further notification is coming and we must return the value directly.
         if let Some(value) = self.map.read().await.get(&key).cloned() {
             tracing::debug!("Key became available before waiting");
             return Some(value);
         }
 
         tracing::trace!("Waiting for key");
-        notify.notified().await;
+        notified.await;
         tracing::trace!("Key is available");
         self.map.read().await.get(&key).cloned()
     }
