@@ -3,11 +3,11 @@ use crate::handle_msg::HandleMessageWithJsep;
 use crate::janus_interface::ConnectionParams;
 use crate::janus_interface::JanusInterface;
 use crate::japrotocol::JaResponse;
-use crate::japrotocol::JaSuccessProtocol;
 use crate::japrotocol::ResponseType;
 use crate::japrotocol::ServerInfoRsp;
 use crate::tgenerator::GenerateTransaction;
 use crate::tgenerator::TransactionGenerator;
+use crate::transport::interface_support;
 use crate::Error;
 use jarust_rt::JaTask;
 use serde_json::json;
@@ -31,28 +31,23 @@ struct Exclusive {
 }
 
 #[derive(Debug)]
-struct InnerResultfulInterface {
+struct InnerRestfulInterface {
     shared: Shared,
     exclusive: Mutex<Exclusive>,
 }
 
 #[derive(Debug, Clone)]
 pub struct RestfulInterface {
-    inner: Arc<InnerResultfulInterface>,
+    inner: Arc<InnerRestfulInterface>,
 }
 
 impl RestfulInterface {
-    fn decorate_request(&self, mut request: Value) -> (Value, String) {
-        let transaction = self
-            .inner
-            .shared
-            .transaction_generator
-            .generate_transaction();
-        if let Some(apisecret) = self.inner.shared.apisecret.clone() {
-            request["apisecret"] = apisecret.into();
-        };
-        request["transaction"] = transaction.clone().into();
-        (request, transaction)
+    fn decorate_request(&self, request: Value) -> (Value, String) {
+        interface_support::decorate_request(
+            &self.inner.shared.transaction_generator,
+            self.inner.shared.apisecret.as_deref(),
+            request,
+        )
     }
 }
 
@@ -74,7 +69,7 @@ impl JanusInterface for RestfulInterface {
             url: format!("{}/{}", conn_params.url, conn_params.server_root),
         };
         let exclusive = Exclusive { tasks: Vec::new() };
-        let inner = InnerResultfulInterface {
+        let inner = InnerRestfulInterface {
             shared,
             exclusive: Mutex::new(exclusive),
         };
@@ -101,21 +96,7 @@ impl JanusInterface for RestfulInterface {
             .json::<JaResponse>()
             .await?;
 
-        let session_id = match response.janus {
-            ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
-            ResponseType::Error { error } => {
-                let what = Error::JanusError {
-                    code: error.code,
-                    reason: error.reason,
-                };
-                tracing::error!("{what}");
-                return Err(what);
-            }
-            _ => {
-                tracing::error!("Unexpected response");
-                return Err(Error::UnexpectedResponse);
-            }
-        };
+        let session_id = interface_support::extract_id(response)?;
         Ok(session_id)
     }
 
@@ -167,21 +148,7 @@ impl JanusInterface for RestfulInterface {
             .await?
             .json::<JaResponse>()
             .await?;
-        let handle_id = match response.janus {
-            ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
-            ResponseType::Error { error } => {
-                let what = Error::JanusError {
-                    code: error.code,
-                    reason: error.reason,
-                };
-                tracing::error!("{what}");
-                return Err(what);
-            }
-            _ => {
-                tracing::error!("Unexpected response");
-                return Err(Error::UnexpectedResponse);
-            }
-        };
+        let handle_id = interface_support::extract_id(response)?;
         let (tx, rx) = mpsc::unbounded_channel();
 
         let handle = jarust_rt::spawn("Long polling", {
@@ -189,18 +156,40 @@ impl JanusInterface for RestfulInterface {
             let url = url.clone();
 
             async move {
+                // Delay applied before retrying after a failed request, so a downed or
+                // slow server doesn't turn this loop into a busy spin.
+                const ERROR_BACKOFF: Duration = Duration::from_millis(500);
+
                 loop {
-                    if let Ok(response) = client
+                    let response = match client
                         .get(format!("{url}/{session_id}?maxev=5"))
                         .send()
                         .await
                     {
-                        if let Ok(res) = response.json::<Vec<JaResponse>>().await {
-                            for r in res {
-                                let _ = tx.send(r);
-                            }
+                        Ok(response) => response,
+                        Err(err) => {
+                            tracing::warn!("Long-poll request failed: {err}");
+                            jarust_rt::sleep(ERROR_BACKOFF).await;
+                            continue;
                         }
                     };
+
+                    let events = match response.json::<Vec<JaResponse>>().await {
+                        Ok(events) => events,
+                        Err(err) => {
+                            tracing::warn!("Failed to decode long-poll response: {err}");
+                            jarust_rt::sleep(ERROR_BACKOFF).await;
+                            continue;
+                        }
+                    };
+
+                    for event in events {
+                        if tx.send(event).is_err() {
+                            // Receiver dropped (handle gone); stop polling.
+                            tracing::debug!("Long-poll receiver dropped, stopping task");
+                            return;
+                        }
+                    }
                 }
             }
         });
@@ -243,11 +232,7 @@ impl JanusInterface for RestfulInterface {
         let session_id = message.session_id;
         let handle_id = message.handle_id;
 
-        let request = json!({
-            "janus": "message",
-            "body": message.body
-        });
-        let (request, transaction) = self.decorate_request(request);
+        let (request, transaction) = self.decorate_request(message.to_message_body());
         self.inner
             .shared
             .client
@@ -268,11 +253,7 @@ impl JanusInterface for RestfulInterface {
         let session_id = message.session_id;
         let handle_id = message.handle_id;
 
-        let request = json!({
-            "janus": "message",
-            "body": message.body
-        });
-        let (request, transaction) = self.decorate_request(request);
+        let (request, transaction) = self.decorate_request(message.to_message_body());
         self.inner
             .shared
             .client
@@ -295,11 +276,7 @@ impl JanusInterface for RestfulInterface {
         let session_id = message.session_id;
         let handle_id = message.handle_id;
 
-        let request = json!({
-            "janus": "message",
-            "body": message.body
-        });
-        let (request, _) = self.decorate_request(request);
+        let (request, _) = self.decorate_request(message.to_message_body());
         let response = self
             .inner
             .shared
@@ -323,12 +300,7 @@ impl JanusInterface for RestfulInterface {
         let session_id = message.session_id;
         let handle_id = message.handle_id;
 
-        let request = json!({
-            "janus": "message",
-            "body": message.body,
-            "jsep": message.jsep
-        });
-        let (request, transaction) = self.decorate_request(request);
+        let (request, transaction) = self.decorate_request(message.to_message_body());
         self.inner
             .shared
             .client
@@ -349,12 +321,7 @@ impl JanusInterface for RestfulInterface {
         let session_id = message.session_id;
         let handle_id = message.handle_id;
 
-        let request = json!({
-            "janus": "message",
-            "body": message.body,
-            "jsep": message.jsep
-        });
-        let (request, transaction) = self.decorate_request(request);
+        let (request, transaction) = self.decorate_request(message.to_message_body());
         self.inner
             .shared
             .client
@@ -416,9 +383,10 @@ impl JanusInterface for RestfulInterface {
     }
 }
 
-impl Drop for Exclusive {
+impl Drop for InnerRestfulInterface {
     fn drop(&mut self) {
-        for task in self.tasks.drain(..) {
+        // `get_mut` avoids locking: we have exclusive access while dropping.
+        for task in self.exclusive.get_mut().tasks.iter() {
             task.cancel();
         }
     }
