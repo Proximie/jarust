@@ -4,12 +4,12 @@ use crate::handle_msg::HandleMessageWithJsep;
 use crate::janus_interface::ConnectionParams;
 use crate::janus_interface::JanusInterface;
 use crate::japrotocol::JaResponse;
-use crate::japrotocol::JaSuccessProtocol;
 use crate::japrotocol::ResponseType;
 use crate::japrotocol::ServerInfoRsp;
 use crate::tgenerator::GenerateTransaction;
 use crate::tgenerator::TransactionGenerator;
 use crate::transport::demuxer::Demuxer;
+use crate::transport::interface_support;
 use crate::transport::napmap::NapMap;
 use crate::transport::router::Router;
 use crate::transport::tmanager::TransactionManager;
@@ -121,17 +121,12 @@ impl WebSocketInterface {
         }
     }
 
-    fn decorate_request(&self, mut request: Value) -> (Value, String) {
-        let transaction = self
-            .inner
-            .shared
-            .transaction_generator
-            .generate_transaction();
-        if let Some(apisecret) = self.inner.shared.apisecret.clone() {
-            request["apisecret"] = apisecret.into();
-        };
-        request["transaction"] = transaction.clone().into();
-        (request, transaction)
+    fn decorate_request(&self, request: Value) -> (Value, String) {
+        interface_support::decorate_request(
+            &self.inner.shared.transaction_generator,
+            self.inner.shared.apisecret.as_deref(),
+            request,
+        )
     }
 }
 
@@ -222,21 +217,7 @@ impl JanusInterface for WebSocketInterface {
 
         let transaction = self.send(request).await?;
         let response = self.poll_response(&transaction, timeout).await?;
-        let session_id = match response.janus {
-            ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
-            ResponseType::Error { error } => {
-                let what = Error::JanusError {
-                    code: error.code,
-                    reason: error.reason,
-                };
-                tracing::error!("{what}");
-                return Err(what);
-            }
-            _ => {
-                tracing::error!("Unexpected response");
-                return Err(Error::UnexpectedResponse);
-            }
-        };
+        let session_id = interface_support::extract_id(response)?;
         Ok(session_id)
     }
 
@@ -271,21 +252,7 @@ impl JanusInterface for WebSocketInterface {
         });
         let transaction = self.send(request).await?;
         let response = self.poll_response(&transaction, timeout).await?;
-        let handle_id = match response.janus {
-            ResponseType::Success(JaSuccessProtocol::Data { data }) => data.id,
-            ResponseType::Error { error } => {
-                let what = Error::JanusError {
-                    code: error.code,
-                    reason: error.reason,
-                };
-                tracing::error!("{what}");
-                return Err(what);
-            }
-            _ => {
-                tracing::error!("Unexpected response");
-                return Err(Error::UnexpectedResponse);
-            }
-        };
+        let handle_id = interface_support::extract_id(response)?;
         let receiver = self
             .inner
             .exclusive
@@ -325,13 +292,7 @@ impl JanusInterface for WebSocketInterface {
 
     #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
     async fn fire_and_forget_msg(&self, message: HandleMessage) -> Result<String, Error> {
-        let request = json!({
-            "janus": "message",
-            "session_id": message.session_id,
-            "handle_id": message.handle_id,
-            "body": message.body
-        });
-        let transaction = self.send(request).await?;
+        let transaction = self.send(message.to_message_envelope()).await?;
         Ok(transaction)
     }
 
@@ -341,13 +302,7 @@ impl JanusInterface for WebSocketInterface {
         message: HandleMessage,
         timeout: Duration,
     ) -> Result<String, Error> {
-        let request = json!({
-            "janus": "message",
-            "session_id": message.session_id,
-            "handle_id": message.handle_id,
-            "body": message.body
-        });
-        let transaction = self.send(request).await?;
+        let transaction = self.send(message.to_message_envelope()).await?;
         self.poll_ack(&transaction, timeout).await?;
         Ok(transaction)
     }
@@ -357,13 +312,7 @@ impl JanusInterface for WebSocketInterface {
         message: HandleMessage,
         timeout: Duration,
     ) -> Result<JaResponse, Error> {
-        let request = json!({
-            "janus": "message",
-            "session_id": message.session_id,
-            "handle_id": message.handle_id,
-            "body": message.body
-        });
-        let transaction = self.send(request).await?;
+        let transaction = self.send(message.to_message_envelope()).await?;
         self.poll_response(&transaction, timeout).await
     }
 
@@ -372,14 +321,7 @@ impl JanusInterface for WebSocketInterface {
         &self,
         message: HandleMessageWithJsep,
     ) -> Result<String, Error> {
-        let request = json!({
-            "janus": "message",
-            "session_id": message.session_id,
-            "handle_id": message.handle_id,
-            "body": message.body,
-            "jsep": message.jsep
-        });
-        let transaction = self.send(request).await?;
+        let transaction = self.send(message.to_message_envelope()).await?;
         Ok(transaction)
     }
 
@@ -389,21 +331,14 @@ impl JanusInterface for WebSocketInterface {
         message: HandleMessageWithJsep,
         timeout: Duration,
     ) -> Result<String, Error> {
-        let request = json!({
-            "janus": "message",
-            "session_id": message.session_id,
-            "handle_id": message.handle_id,
-            "body": message.body,
-            "jsep": message.jsep,
-        });
-        let transaction = self.send(request).await?;
+        let transaction = self.send(message.to_message_envelope()).await?;
         self.poll_ack(&transaction, timeout).await?;
         Ok(transaction)
     }
 
     async fn send_handle_request(&self, request: HandleMessage) -> Result<(), Error> {
         let mut req = request.body;
-        merge_json(
+        interface_support::merge_json(
             &mut req,
             &json!({
                 "session_id": request.session_id,
@@ -420,7 +355,7 @@ impl JanusInterface for WebSocketInterface {
         timeout: Duration,
     ) -> Result<String, Error> {
         let mut req = request.body;
-        merge_json(
+        interface_support::merge_json(
             &mut req,
             &json!({
                 "session_id": request.session_id,
@@ -448,18 +383,5 @@ impl Drop for InnerWebSocketInterface {
         self.shared.tasks.iter().for_each(|task| {
             task.cancel();
         });
-    }
-}
-
-fn merge_json(a: &mut Value, b: &Value) {
-    match (a, b) {
-        (&mut Value::Object(ref mut a), Value::Object(b)) => {
-            for (k, v) in b {
-                merge_json(a.entry(k.clone()).or_insert(Value::Null), v);
-            }
-        }
-        (a, b) => {
-            *a = b.clone();
-        }
     }
 }
