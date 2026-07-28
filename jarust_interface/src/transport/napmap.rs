@@ -65,6 +65,15 @@ where
             .clone();
         drop(notifiers);
 
+        // Re-check after registering the notifier: an `insert` could have landed (and
+        // fired `notify_waiters`) between the initial `contains_key` check above and
+        // registering the notifier here. Without this check that notification would be
+        // lost and the waiter would block forever.
+        if let Some(value) = self.map.read().await.get(&key).cloned() {
+            tracing::debug!("Key became available before waiting");
+            return Some(value);
+        }
+
         tracing::trace!("Waiting for key");
         notify.notified().await;
         tracing::trace!("Key is available");
