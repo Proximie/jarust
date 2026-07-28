@@ -24,7 +24,6 @@ The supported interfaces are:
 
 - [x] WebSocket
 - [x] Restful
-- [x] Socket.IO
 - [ ] MQTT
 - [ ] RabbitMQ
 - [ ] Nanomsg
