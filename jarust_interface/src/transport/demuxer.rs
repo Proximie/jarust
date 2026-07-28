@@ -29,9 +29,11 @@ impl Demuxer {
 
             // Parse the incoming message
             match serde_json::from_str::<JaResponse>(incoming_event) {
-                Ok(response) => match response.clone().janus {
+                Ok(response) => match &response.janus {
                     ResponseType::Error { error } => {
                         tracing::error!("{error:#?}");
+                        // An error is routed to both the response and ack waiters, so a
+                        // single clone here is required.
                         _ = self.rsp_sender.send(response.clone());
                         _ = self.ack_sender.send(response);
                     }
@@ -73,7 +75,7 @@ impl Demuxer {
         }
 
         // Try get the route from the response
-        if let Some(path) = Router::path_from_response(message.clone()) {
+        if let Some(path) = Router::path_from_response(&message) {
             router.pub_subroute(&path, message).await?;
             return Ok(());
         }

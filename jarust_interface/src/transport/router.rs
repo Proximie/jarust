@@ -104,7 +104,7 @@ impl Router {
         }
     }
 
-    pub fn path_from_response(response: JaResponse) -> Option<String> {
+    pub fn path_from_response(response: &JaResponse) -> Option<String> {
         let session_id = response.session_id?;
         let Some(sender) = response.sender else {
             return Some(format!("{session_id}"));

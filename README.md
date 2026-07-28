@@ -5,7 +5,7 @@
 
 Jarust is a memory safe and high-performance Rust adapter for [Janus WebRTC server](https://github.com/meetecho/janus-gateway).
 Inspired by [Janode](https://github.com/meetecho/janode), jarust offers similar functionalities but it's designed
-to be customizable, for exmaple, you could use the built-in WebSocket transport or provide your own RabbitMQ transport implementation.
+to be customizable, for example, you could use the built-in WebSocket transport or provide your own RabbitMQ transport implementation.
 
 The library wraps the Janus core API and some of the most popular plugins APIs.
 
@@ -24,6 +24,7 @@ The supported interfaces are:
 
 - [x] WebSocket
 - [x] Restful
+- [x] Socket.IO
 - [ ] MQTT
 - [ ] RabbitMQ
 - [ ] Nanomsg
@@ -35,10 +36,10 @@ The supported interfaces are:
 
 ## Examples
 
-To run the examples first you have to lunch the janus server.
+To run the examples first you have to launch the janus server.
 
 ```sh
 docker compose up -d
 ```
 
-Examples are avaialbe in [`jarust` create](./jarust/examples/)
+Examples are available in [`jarust` crate](./jarust/examples/)
