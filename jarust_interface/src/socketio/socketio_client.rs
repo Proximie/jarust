@@ -6,10 +6,18 @@ use rust_socketio::asynchronous::ClientBuilder;
 use rust_socketio::Payload;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
 const JANUS_EVENT: &str = "janus";
+
+/// Upper bound on how long we wait for the Socket.IO `open` event before giving
+/// up. Generous enough to ride out transient `error` events during the polling
+/// handshake (which we no longer treat as fatal), but bounded so a server that
+/// only ever emits `error` (e.g. an auth `ConnectError` frame) can't hang the
+/// caller forever.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub struct SocketIoClient {
     socket: Option<Client>,
@@ -95,15 +103,22 @@ impl SocketIoClient {
             .connect()
             .await?;
 
-        match futures_util::future::select(open_rx, fail_rx).await {
-            futures_util::future::Either::Left((result, _)) => {
+        let outcome =
+            tokio::time::timeout(CONNECT_TIMEOUT, futures_util::future::select(open_rx, fail_rx))
+                .await;
+        match outcome {
+            Ok(futures_util::future::Either::Left((result, _))) => {
                 if result.is_err() {
                     tracing::warn!("Socket.IO `open` channel closed before the event fired");
                     return Err(Error::RequestTimeout);
                 }
             }
-            futures_util::future::Either::Right((_, _)) => {
-                tracing::error!("Socket.IO connection failed before the `open` event fired");
+            Ok(futures_util::future::Either::Right((_, _))) => {
+                tracing::error!("Socket.IO connection closed before the `open` event fired");
+                return Err(Error::RequestTimeout);
+            }
+            Err(_) => {
+                tracing::error!("Socket.IO `open` event did not fire within {CONNECT_TIMEOUT:?}");
                 return Err(Error::RequestTimeout);
             }
         }
