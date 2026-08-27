@@ -66,24 +66,23 @@ impl SocketIoClient {
                 }
                 .boxed()
             })
-            .on("error", {
-                let fail_tx = fail_tx.clone();
-                move |payload, _client| {
-                    let fail_tx = fail_tx.clone();
-                    async move {
-                        tracing::error!("Socket.IO error event: {payload:?}");
-                        if let Ok(mut guard) = fail_tx.lock() {
-                            if let Some(tx) = guard.take() {
-                                let _ = tx.send(());
-                            }
-                        }
-                    }
-                    .boxed()
+            .on("error", move |payload, _client| {
+                // `rust_socketio` emits `error` events for transient, recoverable
+                // transport hiccups too (e.g. `IncompleteResponseFromEngineIo`,
+                // logged as "EngineIO Error"), not just fatal failures — its own
+                // client keeps polling and may still fire `open` afterwards.
+                // Treating every `error` as terminal here aborted the connect mid
+                // handshake, racing the `open` event. Log for diagnostics only and
+                // let the `open`/timeout race decide success.
+                async move {
+                    tracing::warn!("Socket.IO error event: {payload:?}");
                 }
+                .boxed()
             })
             .on("close", move |_payload, _client| {
                 let fail_tx = fail_tx.clone();
                 async move {
+                    // A genuine `close` before `open` is a real connection failure.
                     tracing::warn!("Socket.IO connection closed");
                     if let Ok(mut guard) = fail_tx.lock() {
                         if let Some(tx) = guard.take() {
