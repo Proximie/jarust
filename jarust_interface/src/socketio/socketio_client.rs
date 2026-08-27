@@ -12,11 +12,6 @@ use tokio::sync::oneshot;
 
 const JANUS_EVENT: &str = "janus";
 
-/// Upper bound on how long we wait for the Socket.IO `open` event before giving
-/// up. Generous enough to ride out transient `error` events during the polling
-/// handshake (which we no longer treat as fatal), but bounded so a server that
-/// only ever emits `error` (e.g. an auth `ConnectError` frame) can't hang the
-/// caller forever.
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub struct SocketIoClient {
@@ -75,13 +70,9 @@ impl SocketIoClient {
                 .boxed()
             })
             .on("error", move |payload, _client| {
-                // `rust_socketio` emits `error` events for transient, recoverable
-                // transport hiccups too (e.g. `IncompleteResponseFromEngineIo`,
-                // logged as "EngineIO Error"), not just fatal failures — its own
-                // client keeps polling and may still fire `open` afterwards.
-                // Treating every `error` as terminal here aborted the connect mid
-                // handshake, racing the `open` event. Log for diagnostics only and
-                // let the `open`/timeout race decide success.
+                // `error` events can be transient (e.g. "EngineIO Error" during the
+                // polling handshake); rust_socketio keeps polling and may still fire
+                // `open`. Don't fail the connect here — let `open`/timeout decide.
                 async move {
                     tracing::warn!("Socket.IO error event: {payload:?}");
                 }
@@ -90,7 +81,6 @@ impl SocketIoClient {
             .on("close", move |_payload, _client| {
                 let fail_tx = fail_tx.clone();
                 async move {
-                    // A genuine `close` before `open` is a real connection failure.
                     tracing::warn!("Socket.IO connection closed");
                     if let Ok(mut guard) = fail_tx.lock() {
                         if let Some(tx) = guard.take() {
