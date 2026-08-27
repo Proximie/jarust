@@ -13,7 +13,7 @@ use tokio::sync::oneshot;
 const JANUS_EVENT: &str = "janus";
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
-const CONNECT_ATTEMPTS: u32 = 3;
+const CONNECT_ATTEMPTS: u8 = 3;
 const CONNECT_RETRY_BACKOFF: Duration = Duration::from_millis(500);
 
 pub struct SocketIoClient {
