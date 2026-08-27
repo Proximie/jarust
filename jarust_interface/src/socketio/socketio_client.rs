@@ -13,14 +13,7 @@ use tokio::sync::oneshot;
 const JANUS_EVENT: &str = "janus";
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
-
-/// Number of times we retry the Engine.IO handshake before giving up. The
-/// handshake can fail transiently even when the TCP/TLS connection succeeds
-/// (`build_with_fallback` surfaces this as "EngineIO Error"), so a single cold
-/// attempt is not a reliable signal that the server is unreachable.
 const CONNECT_ATTEMPTS: u32 = 3;
-
-/// Delay between handshake attempts.
 const CONNECT_RETRY_BACKOFF: Duration = Duration::from_millis(500);
 
 pub struct SocketIoClient {
@@ -57,9 +50,8 @@ impl SocketIoClient {
                     self.socket = Some(socket);
                     return Ok(rx);
                 }
-                // Only the Engine.IO handshake is retried — it fails transiently even
-                // when the TCP/TLS connection succeeds. A `close` or `open` timeout is
-                // a real failure and returns `RequestTimeout`, which we surface at once.
+                // Retry only the handshake; it fails transiently even when TCP/TLS
+                // succeeds. A `close`/timeout is a real failure and returns at once.
                 Err(err @ Error::SocketIo(_)) if attempt < CONNECT_ATTEMPTS => {
                     tracing::warn!(
                         "Socket.IO handshake attempt {attempt}/{CONNECT_ATTEMPTS} failed: {err}"
@@ -72,10 +64,6 @@ impl SocketIoClient {
         Err(Error::RequestTimeout)
     }
 
-    /// A single connect attempt: build the client, run the Engine.IO handshake,
-    /// and wait for the `open` event (bounded by [`CONNECT_TIMEOUT`]). A failed
-    /// handshake surfaces as [`Error::SocketIo`]; a `close` or timeout after the
-    /// handshake surfaces as [`Error::RequestTimeout`].
     async fn connect_once(
         url: &str,
     ) -> Result<(Client, mpsc::UnboundedReceiver<Bytes>), Error> {
@@ -108,9 +96,8 @@ impl SocketIoClient {
                 .boxed()
             })
             .on("error", move |payload, _client| {
-                // `error` events can be transient (e.g. "EngineIO Error" during the
-                // polling handshake); rust_socketio keeps polling and may still fire
-                // `open`. Don't fail the connect here — let `open`/timeout decide.
+                // `error` events can be transient; the client keeps polling and may
+                // still fire `open`, so don't fail the connect here.
                 async move {
                     tracing::warn!("Socket.IO error event: {payload:?}");
                 }
