@@ -64,9 +64,7 @@ impl SocketIoClient {
         Err(Error::RequestTimeout)
     }
 
-    async fn connect_once(
-        url: &str,
-    ) -> Result<(Client, mpsc::UnboundedReceiver<Bytes>), Error> {
+    async fn connect_once(url: &str) -> Result<(Client, mpsc::UnboundedReceiver<Bytes>), Error> {
         let (tx, rx) = mpsc::unbounded_channel::<Bytes>();
 
         let (open_tx, open_rx) = oneshot::channel::<()>();
@@ -76,6 +74,8 @@ impl SocketIoClient {
         let fail_tx = Arc::new(Mutex::new(Some(fail_tx)));
 
         let socket = ClientBuilder::new(url)
+            .reconnect(true)
+            .max_reconnect_attempts(CONNECT_ATTEMPTS)
             .on(JANUS_EVENT, move |payload, _client| {
                 let tx = tx.clone();
                 async move {
@@ -118,9 +118,11 @@ impl SocketIoClient {
             .connect()
             .await?;
 
-        let outcome =
-            tokio::time::timeout(CONNECT_TIMEOUT, futures_util::future::select(open_rx, fail_rx))
-                .await;
+        let outcome = tokio::time::timeout(
+            CONNECT_TIMEOUT,
+            futures_util::future::select(open_rx, fail_rx),
+        )
+        .await;
         match outcome {
             Ok(futures_util::future::Either::Left((result, _))) => {
                 if result.is_err() {
