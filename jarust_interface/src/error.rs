@@ -13,10 +13,6 @@ pub enum Error {
     #[error("InvalidHeaderValue: {0}")]
     InvalidHeaderValue(#[from] tokio_tungstenite::tungstenite::http::header::InvalidHeaderValue),
 
-    #[cfg(all(not(target_family = "wasm"), feature = "socketio"))]
-    #[error("Socket.IO error: {0}")]
-    SocketIo(#[from] rust_socketio::Error),
-
     #[error("Failed to parse json: {0}")]
     JsonParsingFailure(#[from] serde_json::Error),
     #[error("IO: {0}")]
@@ -29,6 +25,8 @@ pub enum Error {
     IncompletePacket,
     #[error("Transport is not opened")]
     TransportNotOpened,
+    #[error("This interface can't be built through `make_interface`; use its dedicated constructor")]
+    UnsupportedInterfaceConstructor,
     #[error("Invalid Janus request {{ reason: {reason} }}")]
     InvalidJanusRequest { reason: String },
     #[error("Can't send data in closed channel")]
