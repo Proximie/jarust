@@ -38,8 +38,6 @@ use jaconnection::JaConnection;
 use jarust_interface::janus_interface::ConnectionParams;
 use jarust_interface::janus_interface::JanusInterface;
 use jarust_interface::restful::RestfulInterface;
-#[cfg(all(not(target_family = "wasm"), feature = "socketio"))]
-use jarust_interface::socketio::SocketIoInterface;
 use jarust_interface::websocket::WebSocketInterface;
 use tracing::Level;
 
@@ -76,13 +74,6 @@ pub async fn connect(
         JanusAPI::Restful => {
             custom_connect(
                 RestfulInterface::make_interface(conn_params, transaction_generator).await?,
-            )
-            .await
-        }
-        #[cfg(all(not(target_family = "wasm"), feature = "socketio"))]
-        JanusAPI::SocketIo => {
-            custom_connect(
-                SocketIoInterface::make_interface(conn_params, transaction_generator).await?,
             )
             .await
         }

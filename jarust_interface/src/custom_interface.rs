@@ -1,4 +1,11 @@
-use super::socketio_client::SocketIoClient;
+//! A [`JanusInterface`] that speaks the full Janus protocol over any [`Transport`].
+//!
+//! This is the generic counterpart to the native WebSocket and RESTful interfaces: it
+//! owns transaction generation, request decoration, inbound demultiplexing, per-handle
+//! routing and response polling, and delegates only the raw byte movement to a
+//! [`Transport`]. Bring your own transport (including one that lives across an FFI
+//! boundary) and hand it to [`CustomInterface::new`].
+
 use crate::handle_msg::HandleMessage;
 use crate::handle_msg::HandleMessageWithJsep;
 use crate::janus_interface::ConnectionParams;
@@ -13,6 +20,7 @@ use crate::transport::interface_support;
 use crate::transport::napmap::NapMap;
 use crate::transport::router::Router;
 use crate::transport::tmanager::TransactionManager;
+use crate::transport_trait::Transport;
 use crate::Error;
 use jarust_rt::JaTask;
 use serde_json::json;
@@ -28,6 +36,7 @@ struct Shared {
     server_root: String,
     apisecret: Option<String>,
     transaction_generator: TransactionGenerator,
+    transport: Arc<dyn Transport>,
     ack_map: Arc<NapMap<String, JaResponse>>,
     rsp_map: Arc<NapMap<String, JaResponse>>,
 }
@@ -35,75 +44,34 @@ struct Shared {
 #[derive(Debug)]
 struct Exclusive {
     router: Router,
-    socket: SocketIoClient,
     transaction_manager: TransactionManager,
 }
 
 #[derive(Debug)]
-struct InnerSocketIoInterface {
+struct InnerCustomInterface {
     shared: Shared,
     exclusive: Mutex<Exclusive>,
 }
 
+/// A [`JanusInterface`] layered over a user-provided [`Transport`].
 #[derive(Debug, Clone)]
-pub struct SocketIoInterface {
-    inner: Arc<InnerSocketIoInterface>,
+pub struct CustomInterface {
+    inner: Arc<InnerCustomInterface>,
 }
 
-impl SocketIoInterface {
+impl CustomInterface {
+    /// Builds a [`CustomInterface`] driving `transport`, connecting it to
+    /// [`ConnectionParams::url`] and wiring up the demultiplexing machinery.
     #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
-    pub async fn send(&self, message: Value) -> Result<String, Error> {
-        let (message, transaction) = self.decorate_request(message);
-
-        let path =
-            Router::path_from_request(&message).unwrap_or(self.inner.shared.server_root.clone());
-
-        let guard = self.inner.exclusive.lock().await;
-        guard.transaction_manager.insert(&transaction, &path).await;
-        guard
-            .socket
-            .send(message.to_string().as_bytes(), &path)
-            .await?;
-        tracing::trace!("Sending {message:#?}");
-        Ok(transaction)
-    }
-
-    #[tracing::instrument(level = tracing::Level::TRACE, skip(self, timeout))]
-    async fn poll_response(
-        &self,
-        transaction: &str,
-        timeout: Duration,
-    ) -> Result<JaResponse, Error> {
-        tracing::trace!("Polling response");
-        interface_support::poll_transaction(&self.inner.shared.rsp_map, transaction, timeout).await
-    }
-
-    #[tracing::instrument(level = tracing::Level::TRACE, skip(self, timeout))]
-    async fn poll_ack(&self, transaction: &str, timeout: Duration) -> Result<JaResponse, Error> {
-        tracing::trace!("Polling ack");
-        interface_support::poll_transaction(&self.inner.shared.ack_map, transaction, timeout).await
-    }
-
-    fn decorate_request(&self, request: Value) -> (Value, String) {
-        interface_support::decorate_request(
-            &self.inner.shared.transaction_generator,
-            self.inner.shared.apisecret.as_deref(),
-            request,
-        )
-    }
-}
-
-#[async_trait::async_trait]
-impl JanusInterface for SocketIoInterface {
-    #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
-    async fn make_interface(
+    pub async fn new(
+        transport: impl Transport,
         conn_params: ConnectionParams,
         transaction_generator: impl GenerateTransaction,
     ) -> Result<Self, Error> {
-        tracing::debug!("Creating Socket.IO Interface");
+        tracing::debug!("Creating custom interface");
+        let transport: Arc<dyn Transport> = Arc::new(transport);
         let router = Router::new(&conn_params.server_root);
-        let mut socket = SocketIoClient::new();
-        let receiver = socket.connect(&conn_params.url).await?;
+        let receiver = transport.connect(&conn_params.url).await?;
         let transaction_manager = TransactionManager::new(conn_params.capacity);
         let transaction_generator = TransactionGenerator::new(transaction_generator);
 
@@ -153,22 +121,77 @@ impl JanusInterface for SocketIoInterface {
             server_root: conn_params.server_root,
             apisecret: conn_params.apisecret,
             transaction_generator,
+            transport,
             ack_map,
             rsp_map,
         };
         let exclusive = Exclusive {
             router,
-            socket,
             transaction_manager,
         };
-        let inner = InnerSocketIoInterface {
+        let inner = InnerCustomInterface {
             shared,
             exclusive: Mutex::new(exclusive),
         };
-        let this = Self {
+        Ok(Self {
             inner: Arc::new(inner),
-        };
-        Ok(this)
+        })
+    }
+
+    #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
+    async fn send(&self, message: Value) -> Result<String, Error> {
+        let (message, transaction) = self.decorate_request(message);
+
+        let path =
+            Router::path_from_request(&message).unwrap_or(self.inner.shared.server_root.clone());
+
+        let guard = self.inner.exclusive.lock().await;
+        guard.transaction_manager.insert(&transaction, &path).await;
+        self.inner
+            .shared
+            .transport
+            .send(message.to_string().as_bytes(), &path)
+            .await?;
+        tracing::trace!("Sending {message:#?}");
+        Ok(transaction)
+    }
+
+    #[tracing::instrument(level = tracing::Level::TRACE, skip(self, timeout))]
+    async fn poll_response(
+        &self,
+        transaction: &str,
+        timeout: Duration,
+    ) -> Result<JaResponse, Error> {
+        tracing::trace!("Polling response");
+        interface_support::poll_transaction(&self.inner.shared.rsp_map, transaction, timeout).await
+    }
+
+    #[tracing::instrument(level = tracing::Level::TRACE, skip(self, timeout))]
+    async fn poll_ack(&self, transaction: &str, timeout: Duration) -> Result<JaResponse, Error> {
+        tracing::trace!("Polling ack");
+        interface_support::poll_transaction(&self.inner.shared.ack_map, transaction, timeout).await
+    }
+
+    fn decorate_request(&self, request: Value) -> (Value, String) {
+        interface_support::decorate_request(
+            &self.inner.shared.transaction_generator,
+            self.inner.shared.apisecret.as_deref(),
+            request,
+        )
+    }
+}
+
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+impl JanusInterface for CustomInterface {
+    #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
+    async fn make_interface(
+        _conn_params: ConnectionParams,
+        _transaction_generator: impl GenerateTransaction,
+    ) -> Result<Self, Error> {
+        // `CustomInterface` needs a caller-supplied `Transport`, which the fixed
+        // `make_interface` signature can't carry. Use `CustomInterface::new` instead.
+        Err(Error::UnsupportedInterfaceConstructor)
     }
 
     #[tracing::instrument(level = tracing::Level::TRACE, skip_all)]
@@ -330,15 +353,14 @@ impl JanusInterface for SocketIoInterface {
     }
 
     fn name(&self) -> Box<str> {
-        "Socket.IO Interface".to_string().into_boxed_str()
+        "Custom Interface".to_string().into_boxed_str()
     }
 }
 
-impl Drop for InnerSocketIoInterface {
+impl Drop for InnerCustomInterface {
     fn drop(&mut self) {
         self.shared.tasks.iter().for_each(|task| {
             task.cancel();
         });
     }
 }
-
